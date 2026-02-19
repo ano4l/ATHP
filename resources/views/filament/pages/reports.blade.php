@@ -25,27 +25,55 @@
         </div>
 
         {{-- Summary Cards --}}
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
                 <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Requisitions</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ $summary['overall']['count'] ?? 0 }}</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ $summary['overall_count'] ?? 0 }}</p>
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
                 <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Amount</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">${{ number_format($summary['overall']['total'] ?? 0, 2) }}</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">${{ number_format($summary['overall_total'] ?? 0, 2) }}</p>
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Approved</p>
-                <p class="text-2xl font-bold text-green-600 mt-1">{{ $summary['approved']['count'] ?? 0 }}</p>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Queue</p>
+                <p class="text-2xl font-bold text-amber-600 mt-1">{{ $summary['pending_count'] ?? 0 }}</p>
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Pending</p>
-                <p class="text-2xl font-bold text-amber-600 mt-1">{{ $summary['submitted']['count'] ?? 0 }}</p>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">In Approved Pipeline</p>
+                <p class="text-2xl font-bold text-blue-600 mt-1">{{ $summary['approved_pipeline_count'] ?? 0 }}</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Fulfilled</p>
+                <p class="text-2xl font-bold text-emerald-600 mt-1">{{ $summary['fulfilled_count'] ?? 0 }}</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Approval (hrs)</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ number_format($summary['avg_approval_turnaround'] ?? 0, 2) }}</p>
             </div>
         </div>
 
+        {{-- Status Breakdown --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Status Breakdown</h3>
+            @php
+                $statusBreakdown = $summary['status_breakdown'] ?? [];
+            @endphp
+
+            @if(count($statusBreakdown) === 0)
+                <p class="text-sm text-gray-400">No status data in selected period.</p>
+            @else
+                <div class="flex flex-wrap gap-2">
+                    @foreach($statusBreakdown as $status => $count)
+                        <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+                            {{ \Illuminate\Support\Str::of($status)->replace('_', ' ')->title() }}: {{ $count }}
+                        </span>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+
         {{-- Charts --}}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
                 <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">By Branch</h3>
                 @if(count($byBranch) === 0)
@@ -60,6 +88,15 @@
                     <p class="text-sm text-gray-400 text-center py-8">No data available</p>
                 @else
                     <canvas id="typeChart" height="250"></canvas>
+                @endif
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">By Category</h3>
+                @if(count($byCategory) === 0)
+                    <p class="text-sm text-gray-400 text-center py-8">No data available</p>
+                @else
+                    <canvas id="categoryChart" height="250"></canvas>
                 @endif
             </div>
         </div>
@@ -80,6 +117,7 @@
             const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'];
             const byBranch = @json($byBranch);
             const byType = @json($byType);
+            const byCategory = @json($byCategory);
             const overTime = @json($overTime);
 
             if (byBranch.length > 0) {
@@ -109,6 +147,22 @@
                         }]
                     },
                     options: { responsive: true }
+                });
+            }
+
+            if (byCategory.length > 0) {
+                new Chart(document.getElementById('categoryChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: byCategory.map(d => d.category),
+                        datasets: [{
+                            label: 'Count',
+                            data: byCategory.map(d => d.count),
+                            backgroundColor: '#10b981',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { display: false } } }
                 });
             }
 

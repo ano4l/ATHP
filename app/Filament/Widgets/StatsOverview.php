@@ -21,37 +21,67 @@ class StatsOverview extends BaseWidget
         $stats = [];
 
         if ($isAdmin) {
-            $stats[] = Stat::make('Pending Requisitions', CashRequisition::where('status', RequisitionStatus::SUBMITTED)->count())
+            $pendingApprovals = CashRequisition::whereIn('status', [
+                RequisitionStatus::SUBMITTED->value,
+                RequisitionStatus::STAGE1_APPROVED->value,
+                RequisitionStatus::MODIFICATION_REQUESTED->value,
+            ])->count();
+
+            $processingQueue = CashRequisition::whereIn('status', [
+                RequisitionStatus::APPROVED->value,
+                RequisitionStatus::PROCESSING->value,
+                RequisitionStatus::OUTSTANDING->value,
+                RequisitionStatus::PAID->value,
+            ])->count();
+
+            $portfolioValue = CashRequisition::whereIn('status', [
+                RequisitionStatus::APPROVED->value,
+                RequisitionStatus::PROCESSING->value,
+                RequisitionStatus::OUTSTANDING->value,
+                RequisitionStatus::PAID->value,
+                RequisitionStatus::FULFILLED->value,
+                RequisitionStatus::CLOSED->value,
+            ])->sum('amount');
+
+            $stats[] = Stat::make('Pending Approvals', $pendingApprovals)
+                ->description('Stage 1 / final approval queue')
+                ->color('warning')
+                ->icon('heroicon-o-clock');
+
+            $stats[] = Stat::make('In Processing Pipeline', $processingQueue)
+                ->description('Approved to paid/outstanding')
+                ->color('info')
+                ->icon('heroicon-o-cog-6-tooth');
+
+            $stats[] = Stat::make('Pending Leaves', LeaveRequest::where('status', LeaveStatus::SUBMITTED->value)->count())
                 ->description('Awaiting approval')
                 ->color('warning')
                 ->icon('heroicon-o-clock');
 
-            $stats[] = Stat::make('Pending Leaves', LeaveRequest::where('status', LeaveStatus::SUBMITTED)->count())
-                ->description('Awaiting approval')
-                ->color('warning')
-                ->icon('heroicon-o-clock');
-
-            $totalAmount = CashRequisition::where('status', RequisitionStatus::APPROVED)->sum('amount');
-            $stats[] = Stat::make('Total Approved', '$' . number_format($totalAmount, 2))
-                ->description('All approved requisitions')
+            $stats[] = Stat::make('Pipeline Value', '$' . number_format((float) $portfolioValue, 2))
+                ->description('Approved through closed')
                 ->color('success')
                 ->icon('heroicon-o-banknotes');
-
-            $stats[] = Stat::make('Total Requisitions', CashRequisition::count())
-                ->description('All time')
-                ->color('info')
-                ->icon('heroicon-o-document-text');
         } else {
             $stats[] = Stat::make('My Requisitions', CashRequisition::where('requester_id', $user->id)->count())
                 ->icon('heroicon-o-banknotes')
                 ->color('info');
+
+            $myOpen = CashRequisition::where('requester_id', $user->id)
+                ->whereNotIn('status', [RequisitionStatus::DENIED->value, RequisitionStatus::CLOSED->value])
+                ->count();
+
+            $stats[] = Stat::make('My Open Requisitions', $myOpen)
+                ->description('Not closed/denied')
+                ->icon('heroicon-o-folder-open')
+                ->color('warning');
 
             $stats[] = Stat::make('My Leaves', LeaveRequest::where('employee_id', $user->id)->count())
                 ->icon('heroicon-o-calendar-days')
                 ->color('info');
 
             $approvedDays = LeaveRequest::where('employee_id', $user->id)
-                ->where('status', LeaveStatus::APPROVED)
+                ->where('status', LeaveStatus::APPROVED->value)
                 ->sum('days');
             $stats[] = Stat::make('Approved Leave Days', $approvedDays)
                 ->description('Total approved')

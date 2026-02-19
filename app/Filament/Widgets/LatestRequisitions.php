@@ -24,7 +24,18 @@ class LatestRequisitions extends BaseWidget
         return $table
             ->query($query->limit(5))
             ->columns([
+                Tables\Columns\TextColumn::make('reference_no')
+                    ->label('Reference')
+                    ->searchable()
+                    ->limit(20),
                 Tables\Columns\TextColumn::make('requester.name')->label('Requester'),
+                Tables\Columns\TextColumn::make('requisition_type')
+                    ->label('Type')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => $state?->label() ?? '-'),
+                Tables\Columns\TextColumn::make('project_name')
+                    ->label('Project')
+                    ->limit(28),
                 Tables\Columns\TextColumn::make('branch')
                     ->formatStateUsing(fn (Branch $state) => $state->label()),
                 Tables\Columns\TextColumn::make('amount')

@@ -34,7 +34,7 @@ class CreateLeaveRequest extends CreateRecord
     {
         AuditEvent::log('LeaveRequest', $this->record->id, 'CREATED', auth()->id());
 
-        $admins = User::where('role', UserRole::ADMIN)->get();
+        $admins = User::where('role', UserRole::ADMIN->value)->get();
         foreach ($admins as $admin) {
             AppNotification::notify($admin, 'leave_submitted', 'New Leave Request',
                 $this->record->employee->name . ' submitted a ' . $this->record->reason->label() . ' request for ' . $this->record->days . ' day(s)',

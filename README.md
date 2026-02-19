@@ -15,11 +15,18 @@ Internal employee portal for AceTech — cash requisitions, leave management, re
 - **Authentication** — Filament login + registration with branch selection
 - **Role-based access** — Admin sees all records, Employee sees own records only
 - **Dashboard** — stats widgets, latest requisitions & leave tables
-- **Cash Requisitions** — create draft → submit → admin approve/deny with comments
+- **E-Requisitions (Cash + Purchase)** — full lifecycle from draft to closure:
+  - Draft → Submitted
+  - Stage 1 approval → Final approval (for high-value requests)
+  - Modification requests and denials with comments
+  - Finance/admin processing (processing, outstanding, paid/disbursed)
+  - Fulfilment tracking, requester confirmation, and closure
+- **Workflow governance controls** — duplicate guard on submit and configurable stage-2 threshold
+- **Supporting Documents** — private file uploads with secure authenticated download endpoint
 - **Leave Management** — submit with reason, date range, auto business-day calculation; admin approve/deny
-- **Reports** (Admin only) — summary cards, by-branch bar chart, by-type doughnut, over-time line chart, CSV export
+- **Reports** (Admin only) — workflow KPIs, status breakdown, by-branch/by-type/by-category charts, trend analytics, CSV export
 - **Notifications** — in-app notifications for submissions/approvals/denials, mark read/all-read
-- **Audit Trail** — all actions logged to `audit_events` table
+- **Audit Trail** — significant requisition and leave actions logged to `audit_events` and viewable in admin panel
 
 ## Getting Started
 
@@ -62,6 +69,16 @@ php artisan serve
 
 Open **http://localhost:8000/admin**
 
+### Requisition Workflow Configuration
+
+These environment variables tune the E-Requisition flow:
+
+```env
+REQUISITION_STAGE2_THRESHOLD=10000
+REQUISITION_DUPLICATE_LOOKBACK_DAYS=30
+REQUISITION_ATTACHMENT_MAX_MB=10
+```
+
 ### Demo Users
 
 | Role     | Email                | Password     |
@@ -77,7 +94,12 @@ app/
 │   ├── UserRole.php          # admin, employee
 │   ├── Branch.php            # south_africa, zambia, eswatini, zimbabwe
 │   ├── RequisitionFor.php    # client, order, self
-│   ├── RequisitionStatus.php # draft, submitted, approved, denied
+│   ├── RequisitionStatus.php # draft → stage approvals → processing → paid/fulfilled/closed
+│   ├── RequisitionType.php   # cash, purchase
+│   ├── RequisitionCategory.php
+│   ├── PaymentMethod.php
+│   ├── PurchaseStatus.php
+│   ├── DeliveryStatus.php
 │   ├── LeaveReason.php       # annual, sick, family_responsibility, study, unpaid, other
 │   └── LeaveStatus.php       # submitted, approved, denied
 ├── Models/
@@ -89,14 +111,15 @@ app/
 │   └── Notification.php
 ├── Filament/
 │   ├── Resources/
-│   │   ├── CashRequisitionResource.php   # CRUD + submit/approve/deny actions
+│   │   ├── CashRequisitionResource.php   # Full requisition workflow actions + infolists
 │   │   ├── LeaveRequestResource.php      # CRUD + approve/deny actions
-│   │   └── NotificationResource.php      # List + mark read
+│   │   ├── NotificationResource.php      # List + mark read
+│   │   └── AuditEventResource.php        # Audit trail listing (admin only)
 │   ├── Pages/
 │   │   ├── Registration.php              # Custom registration with branch field
-│   │   └── Reports.php                   # Admin reports with charts + CSV export
+│   │   └── Reports.php                   # Admin workflow analytics + CSV export
 │   └── Widgets/
-│       ├── StatsOverview.php             # Dashboard stat cards
+│       ├── StatsOverview.php             # Dashboard workflow stat cards
 │       ├── LatestRequisitions.php        # Recent requisitions table
 │       └── LatestLeaves.php              # Recent leaves table
 └── Providers/
@@ -110,7 +133,10 @@ database/
     └── DatabaseSeeder.php                # Admin + employee + sample data
 
 resources/views/filament/pages/
-    └── reports.blade.php                 # Reports page with Chart.js
+    └── reports.blade.php                 # Reports dashboard with status + category charts
+
+routes/
+└── web.php                               # Includes secure attachment download route
 ```
 
 ## Branches & Currencies

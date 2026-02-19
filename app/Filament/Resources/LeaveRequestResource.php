@@ -29,7 +29,7 @@ class LeaveRequestResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         if (auth()->user()?->isAdmin()) {
-            $count = LeaveRequest::where('status', LeaveStatus::SUBMITTED)->count();
+            $count = LeaveRequest::where('status', LeaveStatus::SUBMITTED->value)->count();
             return $count > 0 ? (string) $count : null;
         }
         return null;
