@@ -58,7 +58,7 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(LeaveRequest::class, 'employee_id');
     }
 
-    public function notifications(): HasMany
+    public function appNotifications(): HasMany
     {
         return $this->hasMany(Notification::class);
     }

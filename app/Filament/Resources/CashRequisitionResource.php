@@ -136,7 +136,7 @@ class CashRequisitionResource extends Resource
                             Forms\Components\DatePicker::make('needed_by')
                                 ->label('Required Date')
                                 ->required()
-                                ->minDate(now()),
+                                ->minDate(fn (?CashRequisition $record) => $record ? null : now()),
                         ]),
 
                         Forms\Components\TextInput::make('client_ref')
@@ -269,7 +269,7 @@ class CashRequisitionResource extends Resource
                 Tables\Filters\SelectFilter::make('branch')
                     ->options(collect(Branch::cases())->mapWithKeys(fn ($b) => [$b->value => $b->label()])),
                 Tables\Filters\SelectFilter::make('requisition_for')
-                    ->label('Type')
+                    ->label('For')
                     ->options(collect(RequisitionFor::cases())->mapWithKeys(fn ($r) => [$r->value => $r->label()])),
             ])
             ->actions([
@@ -673,7 +673,7 @@ class CashRequisitionResource extends Resource
                         $actualAmount = (float) $data['actual_amount'];
                         $requestedAmount = (float) $record->amount;
 
-                        if ($actualAmount !== $requestedAmount && blank($data['variance_reason'] ?? null)) {
+                        if (abs($actualAmount - $requestedAmount) > 0.01 && blank($data['variance_reason'] ?? null)) {
                             Notification::make()
                                 ->title('Variance reason required')
                                 ->body('Please provide a reason when actual spend differs from requested amount.')

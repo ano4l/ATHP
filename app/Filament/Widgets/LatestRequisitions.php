@@ -17,7 +17,7 @@ class LatestRequisitions extends BaseWidget
     public function table(Table $table): Table
     {
         $query = CashRequisition::query()->latest();
-        if (!auth()->user()->isAdmin()) {
+        if (!auth()->user()?->isAdmin()) {
             $query->where('requester_id', auth()->id());
         }
 

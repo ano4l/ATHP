@@ -5,12 +5,12 @@
             <form wire:submit.prevent="$refresh" class="flex flex-wrap items-end gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">From</label>
-                    <input type="date" wire:model.defer="dateFrom"
+                    <input type="date" wire:model="dateFrom"
                            class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">To</label>
-                    <input type="date" wire:model.defer="dateTo"
+                    <input type="date" wire:model="dateTo"
                            class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
                 </div>
                 <button type="submit"
@@ -113,15 +113,24 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'];
+        const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'];
+        let chartInstances = {};
+
+        function destroyCharts() {
+            Object.values(chartInstances).forEach(c => c.destroy());
+            chartInstances = {};
+        }
+
+        function initCharts() {
+            destroyCharts();
+
             const byBranch = @json($byBranch);
             const byType = @json($byType);
             const byCategory = @json($byCategory);
             const overTime = @json($overTime);
 
-            if (byBranch.length > 0) {
-                new Chart(document.getElementById('branchChart'), {
+            if (byBranch.length > 0 && document.getElementById('branchChart')) {
+                chartInstances.branch = new Chart(document.getElementById('branchChart'), {
                     type: 'bar',
                     data: {
                         labels: byBranch.map(d => d.branch),
@@ -136,8 +145,8 @@
                 });
             }
 
-            if (byType.length > 0) {
-                new Chart(document.getElementById('typeChart'), {
+            if (byType.length > 0 && document.getElementById('typeChart')) {
+                chartInstances.type = new Chart(document.getElementById('typeChart'), {
                     type: 'doughnut',
                     data: {
                         labels: byType.map(d => d.type),
@@ -150,8 +159,8 @@
                 });
             }
 
-            if (byCategory.length > 0) {
-                new Chart(document.getElementById('categoryChart'), {
+            if (byCategory.length > 0 && document.getElementById('categoryChart')) {
+                chartInstances.category = new Chart(document.getElementById('categoryChart'), {
                     type: 'bar',
                     data: {
                         labels: byCategory.map(d => d.category),
@@ -166,8 +175,8 @@
                 });
             }
 
-            if (overTime.length > 0) {
-                new Chart(document.getElementById('timeChart'), {
+            if (overTime.length > 0 && document.getElementById('timeChart')) {
+                chartInstances.time = new Chart(document.getElementById('timeChart'), {
                     type: 'line',
                     data: {
                         labels: overTime.map(d => d.month),
@@ -185,6 +194,12 @@
                     }
                 });
             }
-        });
+        }
+
+        document.addEventListener('DOMContentLoaded', initCharts);
+        document.addEventListener('livewire:navigated', initCharts);
+        if (typeof Livewire !== 'undefined') {
+            Livewire.hook('morph.updated', () => { setTimeout(initCharts, 100); });
+        }
     </script>
 </x-filament-panels::page>

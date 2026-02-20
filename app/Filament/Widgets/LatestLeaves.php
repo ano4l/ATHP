@@ -17,7 +17,7 @@ class LatestLeaves extends BaseWidget
     public function table(Table $table): Table
     {
         $query = LeaveRequest::query()->latest();
-        if (!auth()->user()->isAdmin()) {
+        if (!auth()->user()?->isAdmin()) {
             $query->where('employee_id', auth()->id());
         }
 
