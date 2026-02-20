@@ -109,6 +109,67 @@
                 <canvas id="timeChart" height="120"></canvas>
             @endif
         </div>
+
+        {{-- Spend by Project --}}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Spend by Project (Top 15)</h3>
+                @if(count($byProject) === 0)
+                    <p class="text-sm text-gray-400 text-center py-8">No data available</p>
+                @else
+                    <canvas id="projectChart" height="300"></canvas>
+                @endif
+            </div>
+
+            {{-- Requisition Aging --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Requisition Aging (Open Items)</h3>
+                @if(count(array_filter($aging, fn ($a) => $a['count'] > 0)) === 0)
+                    <p class="text-sm text-gray-400 text-center py-8">No open requisitions</p>
+                @else
+                    <canvas id="agingChart" height="300"></canvas>
+                @endif
+            </div>
+        </div>
+
+        {{-- Outstanding Requisitions Table --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Outstanding Requisitions</h3>
+            @if(count($outstanding) === 0)
+                <p class="text-sm text-gray-400">No outstanding requisitions.</p>
+            @else
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-gray-500 dark:text-gray-400 uppercase border-b border-gray-200 dark:border-gray-700">
+                            <tr>
+                                <th class="px-3 py-2">Reference</th>
+                                <th class="px-3 py-2">Requester</th>
+                                <th class="px-3 py-2">Amount</th>
+                                <th class="px-3 py-2">Status</th>
+                                <th class="px-3 py-2">Days Open</th>
+                                <th class="px-3 py-2">Needed By</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                            @foreach($outstanding as $item)
+                                <tr class="text-gray-700 dark:text-gray-300">
+                                    <td class="px-3 py-2 font-medium">{{ $item['reference_no'] }}</td>
+                                    <td class="px-3 py-2">{{ $item['requester'] }}</td>
+                                    <td class="px-3 py-2">{{ $item['amount'] }}</td>
+                                    <td class="px-3 py-2">
+                                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                                            {{ $item['status'] }}
+                                        </span>
+                                    </td>
+                                    <td class="px-3 py-2 {{ $item['days_open'] > 14 ? 'text-red-600 font-semibold' : '' }}">{{ $item['days_open'] }}</td>
+                                    <td class="px-3 py-2">{{ $item['needed_by'] }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
@@ -127,6 +188,8 @@
             const byBranch = @json($byBranch);
             const byType = @json($byType);
             const byCategory = @json($byCategory);
+            const byProject = @json($byProject);
+            const aging = @json($aging);
             const overTime = @json($overTime);
 
             if (byBranch.length > 0 && document.getElementById('branchChart')) {
@@ -172,6 +235,49 @@
                         }]
                     },
                     options: { responsive: true, plugins: { legend: { display: false } } }
+                });
+            }
+
+            if (byProject.length > 0 && document.getElementById('projectChart')) {
+                chartInstances.project = new Chart(document.getElementById('projectChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: byProject.map(d => d.project),
+                        datasets: [{
+                            label: 'Total Spend',
+                            data: byProject.map(d => d.total),
+                            backgroundColor: '#8b5cf6',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { x: { beginAtZero: true } }
+                    }
+                });
+            }
+
+            const agingWithData = aging.filter(d => d.count > 0);
+            if (agingWithData.length > 0 && document.getElementById('agingChart')) {
+                const agingColors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#991b1b'];
+                chartInstances.aging = new Chart(document.getElementById('agingChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: aging.map(d => d.bucket),
+                        datasets: [{
+                            label: 'Requisitions',
+                            data: aging.map(d => d.count),
+                            backgroundColor: agingColors,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                    }
                 });
             }
 

@@ -40,6 +40,9 @@ class Reports extends Page
             'byBranch' => $this->getByBranch($from, $to),
             'byType' => $this->getByType($from, $to),
             'byCategory' => $this->getByCategory($from, $to),
+            'byProject' => $this->getByProject($from, $to),
+            'outstanding' => $this->getOutstanding(),
+            'aging' => $this->getAging(),
             'overTime' => $this->getOverTime($from, $to),
         ];
     }
@@ -133,6 +136,91 @@ class Reports extends Page
                 'count' => (int) $r->count,
                 'total' => (float) $r->total,
             ])
+            ->toArray();
+    }
+
+    protected function getByProject(Carbon $from, Carbon $to): array
+    {
+        return CashRequisition::whereBetween('created_at', [$from, $to])
+            ->whereNotNull('project_name')
+            ->select('project_name', DB::raw('COUNT(*) as count'), DB::raw('COALESCE(SUM(amount), 0) as total'))
+            ->groupBy('project_name')
+            ->orderByDesc('total')
+            ->limit(15)
+            ->get()
+            ->map(fn ($r) => [
+                'project' => $r->project_name,
+                'count' => (int) $r->count,
+                'total' => (float) $r->total,
+            ])
+            ->toArray();
+    }
+
+    protected function getOutstanding(): array
+    {
+        $outstandingStatuses = [
+            RequisitionStatus::SUBMITTED->value,
+            RequisitionStatus::STAGE1_APPROVED->value,
+            RequisitionStatus::MODIFICATION_REQUESTED->value,
+            RequisitionStatus::APPROVED->value,
+            RequisitionStatus::PROCESSING->value,
+            RequisitionStatus::OUTSTANDING->value,
+        ];
+
+        return CashRequisition::with('requester')
+            ->whereIn('status', $outstandingStatuses)
+            ->orderBy('created_at')
+            ->limit(50)
+            ->get()
+            ->map(fn (CashRequisition $r) => [
+                'reference_no' => $r->reference_no ?? ('#' . $r->id),
+                'requester' => $r->requester?->name ?? '-',
+                'amount' => $r->formattedAmount(),
+                'status' => $this->enumLabel($r->status),
+                'days_open' => (int) $r->created_at->diffInDays(now()),
+                'needed_by' => $r->needed_by?->format('d M Y') ?? '-',
+            ])
+            ->toArray();
+    }
+
+    protected function getAging(): array
+    {
+        $openStatuses = [
+            RequisitionStatus::SUBMITTED->value,
+            RequisitionStatus::STAGE1_APPROVED->value,
+            RequisitionStatus::MODIFICATION_REQUESTED->value,
+            RequisitionStatus::APPROVED->value,
+            RequisitionStatus::PROCESSING->value,
+            RequisitionStatus::OUTSTANDING->value,
+            RequisitionStatus::PAID->value,
+            RequisitionStatus::FULFILLED->value,
+        ];
+
+        $buckets = [
+            '0-7 days' => 0,
+            '8-14 days' => 0,
+            '15-30 days' => 0,
+            '31-60 days' => 0,
+            '60+ days' => 0,
+        ];
+
+        CashRequisition::whereIn('status', $openStatuses)
+            ->select('created_at')
+            ->get()
+            ->each(function (CashRequisition $r) use (&$buckets): void {
+                $age = (int) $r->created_at->diffInDays(now());
+                match (true) {
+                    $age <= 7 => $buckets['0-7 days']++,
+                    $age <= 14 => $buckets['8-14 days']++,
+                    $age <= 30 => $buckets['15-30 days']++,
+                    $age <= 60 => $buckets['31-60 days']++,
+                    default => $buckets['60+ days']++,
+                };
+            });
+
+        return collect($buckets)
+            ->map(fn ($count, $bucket) => ['bucket' => $bucket, 'count' => $count])
+            ->values()
             ->toArray();
     }
 
