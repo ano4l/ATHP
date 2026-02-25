@@ -63,7 +63,6 @@ class AdminPanelProvider extends PanelProvider
                 'Requests',
                 'Administration',
             ])
-            ->databaseNotifications()
             ->sidebarCollapsibleOnDesktop();
     }
 }
