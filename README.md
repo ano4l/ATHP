@@ -121,7 +121,7 @@ app/
 │   └── Widgets/
 │       ├── StatsOverview.php             # Dashboard workflow stat cards
 │       ├── LatestRequisitions.php        # Recent requisitions table
-│       └── LatestLeaves.php              # Recent leaves table
+│       └── LatestLeaves.php              # Recent leaves t
 └── Providers/
     ├── AppServiceProvider.php
     └── Filament/
