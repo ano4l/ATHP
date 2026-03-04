@@ -4,24 +4,30 @@ import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import {
   X, ChevronRight, ChevronLeft, Upload, Trash2,
-  Paperclip, CheckCircle2, AlertCircle
+  Paperclip, CheckCircle2, AlertCircle, Save
 } from "lucide-react";
+import { createRequisition } from "@/lib/api";
 
 interface RequisitionFormProps {
   open: boolean;
   onClose: () => void;
-  onSubmit?: (data: FormData) => void;
 }
 
 const STEPS = ["Project Details", "Amount & Details", "Attachments", "Review"];
 
 const CATEGORIES = [
-  { value: "operations", label: "Operations" },
-  { value: "project", label: "Project" },
-  { value: "emergency", label: "Emergency" },
-  { value: "client", label: "Client Related" },
-  { value: "procurement", label: "Procurement" },
+  { value: "fuel", label: "Fuel" },
+  { value: "airtime", label: "Airtime" },
+  { value: "materials", label: "Materials" },
   { value: "travel", label: "Travel" },
+  { value: "procurement", label: "Procurement" },
+  { value: "operations", label: "Operations" },
+  { value: "office_supplies", label: "Office Supplies" },
+  { value: "it_software", label: "IT & Software" },
+  { value: "marketing", label: "Marketing" },
+  { value: "training", label: "Training" },
+  { value: "fleet_transport", label: "Fleet & Transport" },
+  { value: "emergency", label: "Emergency" },
   { value: "other", label: "Other" },
 ];
 
@@ -46,6 +52,7 @@ interface FormState {
   requisition_for: string;
   client_ref: string;
   order_ref: string;
+  is_basic_requisition: boolean;
 }
 
 const initial: FormState = {
@@ -62,6 +69,7 @@ const initial: FormState = {
   requisition_for: "internal",
   client_ref: "",
   order_ref: "",
+  is_basic_requisition: false,
 };
 
 function Field({ label, required, error, children }: { label: string; required?: boolean; error?: string; children: React.ReactNode }) {
@@ -79,19 +87,20 @@ function Field({ label, required, error, children }: { label: string; required?:
 const inputCls = "w-full h-10 px-3 rounded-lg bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-accent transition-all";
 const selectCls = "w-full h-10 px-3 rounded-lg bg-secondary border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-accent transition-all";
 
-export function RequisitionForm({ open, onClose, onSubmit }: RequisitionFormProps) {
+export function RequisitionForm({ open, onClose }: RequisitionFormProps) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>(initial);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [apiError, setApiError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const set = (k: keyof FormState, v: string) => {
+  const set = (k: keyof FormState, v: string | boolean) => {
     setForm(f => ({ ...f, [k]: v }));
     setErrors(e => ({ ...e, [k]: undefined }));
-    if (k === "branch") {
+    if (k === "branch" && typeof v === "string") {
       const b = BRANCHES.find(b => b.value === v);
       if (b) setForm(f => ({ ...f, branch: v, currency: b.currency }));
     }
@@ -108,6 +117,8 @@ export function RequisitionForm({ open, onClose, onSubmit }: RequisitionFormProp
       if (!form.amount || parseFloat(form.amount) <= 0) e.amount = "Valid amount is required";
       if (!form.purpose.trim()) e.purpose = "Business justification is required";
       if (!form.needed_by) e.needed_by = "Required date is needed";
+      if (!form.cost_center.trim()) e.cost_center = "Cost centre is required";
+      if (!form.budget_code.trim()) e.budget_code = "Budget code is required";
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -124,18 +135,45 @@ export function RequisitionForm({ open, onClose, onSubmit }: RequisitionFormProp
 
   function removeFile(i: number) { setFiles(f => f.filter((_, idx) => idx !== i)); }
 
-  async function handleSubmit() {
+  function buildFormData(draft: boolean): FormData {
+    const fd = new FormData();
+    fd.append("project_name", form.project_name);
+    if (form.project_code) fd.append("project_code", form.project_code);
+    fd.append("category", form.category);
+    fd.append("branch", form.branch);
+    fd.append("currency", form.currency);
+    fd.append("amount", form.amount);
+    fd.append("purpose", form.purpose);
+    fd.append("cost_center", form.cost_center);
+    fd.append("budget_code", form.budget_code);
+    fd.append("needed_by", form.needed_by);
+    fd.append("requisition_for", form.requisition_for);
+    if (form.client_ref) fd.append("client_ref", form.client_ref);
+    if (form.order_ref) fd.append("order_ref", form.order_ref);
+    if (form.is_basic_requisition) fd.append("is_basic_requisition", "1");
+    if (draft) fd.append("save_as_draft", "1");
+    files.forEach(f => fd.append("attachments[]", f));
+    return fd;
+  }
+
+  async function handleSubmit(draft = false) {
     setSubmitting(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setSubmitting(false);
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setStep(0);
-      setForm(initial);
-      setFiles([]);
-      onClose();
-    }, 2000);
+    setApiError("");
+    try {
+      await createRequisition(buildFormData(draft));
+      setSubmitted(true);
+      setTimeout(() => {
+        setSubmitted(false);
+        setStep(0);
+        setForm(initial);
+        setFiles([]);
+        onClose();
+      }, 1800);
+    } catch (err: any) {
+      setApiError(err.message || "Submission failed. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleClose() {
@@ -144,12 +182,11 @@ export function RequisitionForm({ open, onClose, onSubmit }: RequisitionFormProp
     setFiles([]);
     setErrors({});
     setSubmitted(false);
+    setApiError("");
     onClose();
   }
 
   if (!open) return null;
-
-  const branch = BRANCHES.find(b => b.value === form.branch);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -200,6 +237,10 @@ export function RequisitionForm({ open, onClose, onSubmit }: RequisitionFormProp
             </div>
           ) : (
             <>
+              {apiError && (
+                <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-sm text-destructive">{apiError}</div>
+              )}
+
               {/* Step 0: Project Details */}
               {step === 0 && (
                 <div className="space-y-4">
@@ -281,11 +322,11 @@ export function RequisitionForm({ open, onClose, onSubmit }: RequisitionFormProp
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <Field label="Cost Centre">
-                      <input className={inputCls} placeholder="e.g. CC-OPS-001" value={form.cost_center} onChange={e => set("cost_center", e.target.value)} />
+                    <Field label="Cost Centre" required error={errors.cost_center}>
+                      <input className={cn(inputCls, errors.cost_center && "border-destructive")} placeholder="e.g. CC-OPS-001" value={form.cost_center} onChange={e => set("cost_center", e.target.value)} />
                     </Field>
-                    <Field label="Budget Code">
-                      <input className={inputCls} placeholder="e.g. BUD-2026-Q1" value={form.budget_code} onChange={e => set("budget_code", e.target.value)} />
+                    <Field label="Budget Code" required error={errors.budget_code}>
+                      <input className={cn(inputCls, errors.budget_code && "border-destructive")} placeholder="e.g. BUD-2026-Q1" value={form.budget_code} onChange={e => set("budget_code", e.target.value)} />
                     </Field>
                   </div>
 
@@ -341,8 +382,15 @@ export function RequisitionForm({ open, onClose, onSubmit }: RequisitionFormProp
                     </div>
                   )}
 
+                  {files.length >= 2 && (
+                    <label className="flex items-center gap-2 cursor-pointer p-3 rounded-lg bg-secondary/50 border border-border">
+                      <input type="checkbox" checked={form.is_basic_requisition} onChange={e => set("is_basic_requisition", e.target.checked)} className="accent-accent" />
+                      <span className="text-sm text-foreground">Flag as Basic Requisition (multiple quotes for comparison)</span>
+                    </label>
+                  )}
+
                   {files.length === 0 && (
-                    <p className="text-xs text-center text-muted-foreground">No attachments added. Some categories may require supporting documents.</p>
+                    <p className="text-xs text-center text-muted-foreground">No attachments added. Procurement, Materials & Emergency categories require supporting documents.</p>
                   )}
                 </div>
               )}
@@ -360,11 +408,13 @@ export function RequisitionForm({ open, onClose, onSubmit }: RequisitionFormProp
                       ["Required By", form.needed_by || "—"],
                       ["Cost Centre", form.cost_center || "—"],
                       ["Budget Code", form.budget_code || "—"],
+                      ["For", form.requisition_for],
                       ["Attachments", files.length > 0 ? `${files.length} file(s)` : "None"],
+                      ["Basic Requisition", form.is_basic_requisition ? "Yes" : "No"],
                     ].map(([k, v]) => (
-                      <div key={k} className="flex items-start justify-between gap-4">
+                      <div key={k as string} className="flex items-start justify-between gap-4">
                         <span className="text-xs text-muted-foreground shrink-0">{k}</span>
-                        <span className="text-xs font-medium text-foreground text-right">{v}</span>
+                        <span className="text-xs font-medium text-foreground text-right capitalize">{v}</span>
                       </div>
                     ))}
                   </div>
@@ -372,9 +422,13 @@ export function RequisitionForm({ open, onClose, onSubmit }: RequisitionFormProp
                     <h3 className="text-xs font-semibold text-muted-foreground mb-1">Business Justification</h3>
                     <p className="text-sm text-foreground">{form.purpose || "—"}</p>
                   </div>
+
                   <div className="flex items-start gap-3 p-3 rounded-lg bg-chart-1/10 border border-chart-1/20">
                     <AlertCircle className="w-4 h-4 text-chart-1 shrink-0 mt-0.5" />
-                    <p className="text-xs text-foreground">By submitting, this requisition will be sent to the approver and a reference number will be generated.</p>
+                    <div className="text-xs text-foreground space-y-1">
+                      <p>By submitting, this requisition will be sent to the approver and a reference number will be generated.</p>
+                      <p className="text-muted-foreground">Ensure all mandatory fields are completed. High-value requests require two-stage approval. Use comments to communicate with approvers.</p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -392,23 +446,34 @@ export function RequisitionForm({ open, onClose, onSubmit }: RequisitionFormProp
             >
               <ChevronLeft className="w-4 h-4" /> Back
             </button>
-            {step < STEPS.length - 1 ? (
-              <button onClick={next} className="flex items-center gap-2 px-5 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:bg-accent/90 transition-colors">
-                Next <ChevronRight className="w-4 h-4" />
-              </button>
-            ) : (
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="flex items-center gap-2 px-5 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-70"
-              >
-                {submitting ? (
-                  <><span className="w-4 h-4 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" />Submitting...</>
-                ) : (
-                  <><CheckCircle2 className="w-4 h-4" />Submit Requisition</>
-                )}
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {step === STEPS.length - 1 && (
+                <button
+                  onClick={() => handleSubmit(true)}
+                  disabled={submitting}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-70"
+                >
+                  <Save className="w-4 h-4" /> Save Draft
+                </button>
+              )}
+              {step < STEPS.length - 1 ? (
+                <button onClick={next} className="flex items-center gap-2 px-5 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:bg-accent/90 transition-colors">
+                  Next <ChevronRight className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleSubmit(false)}
+                  disabled={submitting}
+                  className="flex items-center gap-2 px-5 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-70"
+                >
+                  {submitting ? (
+                    <><span className="w-4 h-4 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" />Submitting...</>
+                  ) : (
+                    <><CheckCircle2 className="w-4 h-4" />Submit Requisition</>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

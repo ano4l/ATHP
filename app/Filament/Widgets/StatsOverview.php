@@ -51,7 +51,7 @@ class StatsOverview extends BaseWidget
                 ->color('info')
                 ->icon('heroicon-o-cog-6-tooth');
 
-            $stats[] = Stat::make('Pipeline Value', '$' . number_format((float) $portfolioValue, 2))
+            $stats[] = Stat::make('Pipeline Value', number_format((float) $portfolioValue, 2))
                 ->description('Approved through closed')
                 ->color('success')
                 ->icon('heroicon-o-banknotes');

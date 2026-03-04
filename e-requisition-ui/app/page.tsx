@@ -8,10 +8,12 @@ import { RequisitionsSection } from "@/components/dashboard/sections/requisition
 import { ApprovalsSection } from "@/components/dashboard/sections/approvals";
 import { ReportsSection } from "@/components/dashboard/sections/reports";
 import { AuditSection } from "@/components/dashboard/sections/audit";
+import { NotificationsSection } from "@/components/dashboard/sections/notifications";
+import { FaqSection } from "@/components/dashboard/sections/faq";
 import { SettingsSection } from "@/components/dashboard/sections/settings";
 import { logout } from "@/lib/api";
 
-export type Section = "overview" | "requisitions" | "approvals" | "reports" | "audit" | "settings";
+export type Section = "overview" | "requisitions" | "approvals" | "reports" | "audit" | "notifications" | "faq" | "settings";
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState<Section>("overview");
@@ -42,6 +44,10 @@ export default function Dashboard() {
         return <ReportsSection />;
       case "audit":
         return <AuditSection />;
+      case "notifications":
+        return <NotificationsSection />;
+      case "faq":
+        return <FaqSection />;
       case "settings":
         return <SettingsSection />;
       default:

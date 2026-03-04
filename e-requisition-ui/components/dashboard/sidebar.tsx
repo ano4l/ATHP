@@ -11,6 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  Bell,
+  HelpCircle,
   Settings,
   Receipt,
   LogOut,
@@ -30,6 +32,8 @@ const navItems: { id: Section; label: string; icon: React.ElementType; badge?: s
   { id: "approvals", label: "Approvals", icon: CheckSquare, badge: "4" },
   { id: "reports", label: "Reports", icon: BarChart3 },
   { id: "audit", label: "Audit Trail", icon: ClipboardList },
+  { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "faq", label: "Help & FAQ", icon: HelpCircle },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 

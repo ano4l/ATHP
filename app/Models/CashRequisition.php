@@ -28,6 +28,7 @@ class CashRequisition extends Model
         'cost_center',
         'budget_code',
         'requires_additional_approval',
+        'is_basic_requisition',
         'requisition_for',
         'client_ref',
         'order_ref',
@@ -74,6 +75,7 @@ class CashRequisition extends Model
             'purchase_status' => PurchaseStatus::class,
             'delivery_status' => DeliveryStatus::class,
             'requires_additional_approval' => 'boolean',
+            'is_basic_requisition' => 'boolean',
             'amount' => 'decimal:2',
             'actual_amount' => 'decimal:2',
             'needed_by' => 'date',
@@ -144,6 +146,11 @@ class CashRequisition extends Model
     public function attachments(): HasMany
     {
         return $this->hasMany(CashRequisitionAttachment::class, 'requisition_id');
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(RequisitionComment::class, 'requisition_id');
     }
 
     public function formattedAmount(): string

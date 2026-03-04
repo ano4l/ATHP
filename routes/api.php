@@ -27,5 +27,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/requisitions/{requisition}/fulfil', [RequisitionController::class, 'fulfil']);
     Route::post('/requisitions/{requisition}/close', [RequisitionController::class, 'close']);
     Route::post('/requisitions/{requisition}/attachments', [RequisitionController::class, 'uploadAttachment']);
+    Route::get('/requisitions/{requisition}/comments', [RequisitionController::class, 'comments']);
+    Route::post('/requisitions/{requisition}/comments', [RequisitionController::class, 'addComment']);
+    Route::post('/requisitions/{requisition}/submit', [RequisitionController::class, 'submitDraft']);
 
 });

@@ -7,6 +7,7 @@ use App\Models\AuditEvent;
 use App\Models\CashRequisition;
 use App\Models\CashRequisitionAttachment;
 use App\Models\Notification;
+use App\Models\RequisitionComment;
 use App\Models\User;
 use App\Enums\RequisitionStatus;
 use App\Enums\UserRole;
@@ -58,8 +59,8 @@ class RequisitionController extends Controller
             'amount' => 'required|numeric|min:0.01',
             'currency' => 'required|string|max:10',
             'purpose' => 'required|string',
-            'cost_center' => 'nullable|string|max:100',
-            'budget_code' => 'nullable|string|max:100',
+            'cost_center' => 'required|string|max:100',
+            'budget_code' => 'required|string|max:100',
             'needed_by' => 'required|date|after_or_equal:today',
             'requisition_for' => 'nullable|string',
             'client_ref' => 'nullable|string|max:100',
@@ -84,8 +85,8 @@ class RequisitionController extends Controller
             'requisition_for' => $request->requisition_for,
             'client_ref' => $request->client_ref,
             'order_ref' => $request->order_ref,
-            'status' => RequisitionStatus::SUBMITTED,
-            'submitted_at' => now(),
+            'status' => $request->input('save_as_draft') ? RequisitionStatus::DRAFT : RequisitionStatus::SUBMITTED,
+            'submitted_at' => $request->input('save_as_draft') ? null : now(),
         ]);
 
         if ($request->hasFile('attachments')) {
@@ -102,21 +103,24 @@ class RequisitionController extends Controller
             }
         }
 
-        AuditEvent::log('CashRequisition', $requisition->id, 'submitted', $user->id, [
+        $action = $request->input('save_as_draft') ? 'draft_created' : 'submitted';
+        AuditEvent::log('CashRequisition', $requisition->id, $action, $user->id, [
             'amount' => $requisition->amount,
             'reference_no' => $requisition->reference_no,
         ]);
 
-        $admins = User::where('role', UserRole::ADMIN)->get();
-        foreach ($admins as $admin) {
-            Notification::notify(
-                $admin,
-                'requisition_submitted',
-                'New Requisition Submitted',
-                "{$user->name} submitted {$requisition->reference_no} for {$requisition->currency} {$requisition->amount}",
-                'CashRequisition',
-                $requisition->id
-            );
+        if (! $request->input('save_as_draft')) {
+            $admins = User::where('role', UserRole::ADMIN)->get();
+            foreach ($admins as $admin) {
+                Notification::notify(
+                    $admin,
+                    'requisition_submitted',
+                    'New Requisition Submitted',
+                    "{$user->name} submitted {$requisition->reference_no} for {$requisition->currency} {$requisition->amount}",
+                    'CashRequisition',
+                    $requisition->id
+                );
+            }
         }
 
         $requisition->load(['requester:id,name,email,branch', 'attachments']);
@@ -345,6 +349,81 @@ class RequisitionController extends Controller
             'file_name' => $file->getClientOriginalName(),
         ]);
 
+        $admins = User::where('role', UserRole::ADMIN)->get();
+        foreach ($admins as $admin) {
+            Notification::notify(
+                $admin,
+                'attachment_uploaded',
+                'Attachment Uploaded',
+                "{$user->name} uploaded '{$file->getClientOriginalName()}' to {$requisition->reference_no}",
+                'CashRequisition',
+                $requisition->id
+            );
+        }
+
         return response()->json($attachment, 201);
+    }
+
+    public function comments(CashRequisition $requisition): JsonResponse
+    {
+        $comments = $requisition->comments()
+            ->with('user:id,name')
+            ->orderBy('created_at')
+            ->get();
+
+        return response()->json($comments);
+    }
+
+    public function addComment(Request $request, CashRequisition $requisition): JsonResponse
+    {
+        $request->validate([
+            'body' => 'required|string|max:2000',
+            'context' => 'nullable|string|max:50',
+        ]);
+
+        $comment = RequisitionComment::create([
+            'requisition_id' => $requisition->id,
+            'user_id' => $request->user()->id,
+            'body' => $request->body,
+            'context' => $request->context ?? 'general',
+        ]);
+
+        $comment->load('user:id,name');
+
+        return response()->json($comment, 201);
+    }
+
+    public function submitDraft(Request $request, CashRequisition $requisition): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($requisition->requester_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (! in_array($requisition->status, [RequisitionStatus::DRAFT, RequisitionStatus::MODIFICATION_REQUESTED])) {
+            return response()->json(['message' => 'Can only submit drafts or modification-requested requisitions'], 422);
+        }
+
+        $requisition->update([
+            'status' => RequisitionStatus::SUBMITTED,
+            'submitted_at' => now(),
+        ]);
+
+        AuditEvent::log('CashRequisition', $requisition->id, 'submitted', $user->id);
+
+        $admins = User::where('role', UserRole::ADMIN)->get();
+        foreach ($admins as $admin) {
+            Notification::notify(
+                $admin,
+                'requisition_submitted',
+                'New Requisition Submitted',
+                "{$user->name} submitted {$requisition->reference_no} for {$requisition->formattedAmount()}",
+                'CashRequisition',
+                $requisition->id
+            );
+        }
+
+        return response()->json($requisition->fresh()->load('requester:id,name,email,branch'));
     }
 }

@@ -1,276 +1,242 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, XCircle, MessageSquare, Clock, AlertTriangle, Send, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  CheckCircle2, XCircle, MessageSquare, Clock,
+  ChevronDown, ChevronUp, AlertCircle, Loader2, RefreshCw
+} from "lucide-react";
+import { getRequisitions, approveRequisition, denyRequisition, requestModification } from "@/lib/api";
 
-interface Comment {
+interface Requisition {
   id: number;
-  author: string;
-  text: string;
-  time: string;
-}
-
-interface Approval {
-  ref: string;
-  project: string;
-  requester: string;
+  reference_no: string;
+  project_name: string;
+  category: string;
   branch: string;
   amount: string;
-  category: string;
-  stage: string;
-  submitted: string;
-  daysOpen: number;
-  status: "pending" | "approved" | "denied" | "modification_requested";
-  comments: Comment[];
+  currency: string;
+  status: string;
+  purpose: string;
+  cost_center: string;
+  budget_code: string;
+  needed_by: string;
+  created_at: string;
+  requester?: { name: string; email: string };
 }
 
-const initialApprovals: Approval[] = [
-  { ref: "REQ-2026-0247", project: "Copperline Client Rollout", requester: "Jane Employee", branch: "Zambia", amount: "ZMW 5,000.00", category: "Travel", stage: "Stage 1", submitted: "2 hours ago", daysOpen: 0, status: "pending", comments: [] },
-  { ref: "REQ-2026-0246", project: "Warehouse PPE Refresh", requester: "Jane Employee", branch: "Zambia", amount: "ZMW 12,500.00", category: "Procurement", stage: "Stage 2", submitted: "5 hours ago", daysOpen: 0, status: "pending", comments: [{ id: 1, author: "Jane Employee", text: "Urgent — PPE stock is critically low.", time: "4 hours ago" }] },
-  { ref: "REQ-2026-0250", project: "Client Event Catering", requester: "Admin User", branch: "South Africa", amount: "ZAR 15,000.00", category: "Marketing", stage: "Stage 1", submitted: "1 day ago", daysOpen: 1, status: "pending", comments: [] },
-  { ref: "REQ-2026-0251", project: "Server Room Cooling", requester: "Jane Employee", branch: "Zimbabwe", amount: "USD 4,800.00", category: "IT & Software", stage: "Stage 1", submitted: "2 days ago", daysOpen: 2, status: "pending", comments: [] },
-];
-
-const statusDisplay: Record<string, { color: string; bg: string; label: string }> = {
-  pending: { color: "text-warning", bg: "bg-warning/10", label: "Pending" },
-  approved: { color: "text-success", bg: "bg-success/10", label: "Approved" },
-  denied: { color: "text-destructive", bg: "bg-destructive/10", label: "Denied" },
-  modification_requested: { color: "text-chart-1", bg: "bg-chart-1/10", label: "Modification Requested" },
-};
-
 export function ApprovalsSection() {
-  const [approvals, setApprovals] = useState<Approval[]>(initialApprovals);
-  const [expandedRef, setExpandedRef] = useState<string | null>(null);
-  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
-  const [confirmAction, setConfirmAction] = useState<{ ref: string; action: "approve" | "deny" | "modify" } | null>(null);
+  const [requisitions, setRequisitions] = useState<Requisition[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [comments, setComments] = useState<Record<number, string>>({});
+  const [confirmAction, setConfirmAction] = useState<{ id: number; action: "approve" | "deny" | "modify" } | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  const pendingCount = approvals.filter((a) => a.status === "pending").length;
-  const approvedCount = approvals.filter((a) => a.status === "approved").length;
-  const overdueCount = approvals.filter((a) => a.status === "pending" && a.daysOpen >= 2).length;
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [submitted, stage1] = await Promise.all([
+        getRequisitions("submitted", 1),
+        getRequisitions("stage1_approved", 1),
+      ]);
+      setRequisitions([...(submitted.data ?? []), ...(stage1.data ?? [])]);
+    } catch (e) {
+      console.error("Failed to load approvals", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  function handleAction(ref: string, action: "approve" | "deny" | "modify") {
-    const comment = commentInputs[ref]?.trim();
-    setApprovals((prev) =>
-      prev.map((a) => {
-        if (a.ref !== ref) return a;
-        const newStatus = action === "approve" ? "approved" : action === "deny" ? "denied" : "modification_requested";
-        const actionLabel = action === "approve" ? "Approved" : action === "deny" ? "Denied" : "Requested modification";
-        const newComments = [...a.comments];
-        if (comment) {
-          newComments.push({ id: Date.now(), author: "You (Admin)", text: comment, time: "Just now" });
-        }
-        newComments.push({ id: Date.now() + 1, author: "System", text: `${actionLabel} by Admin User`, time: "Just now" });
-        return { ...a, status: newStatus as Approval["status"], comments: newComments };
-      })
-    );
-    setCommentInputs((prev) => ({ ...prev, [ref]: "" }));
-    setConfirmAction(null);
+  useEffect(() => { load(); }, [load]);
+
+  async function handleAction(id: number, action: "approve" | "deny" | "modify") {
+    setActionLoading(true);
+    const comment = comments[id] || "";
+    try {
+      if (action === "approve") await approveRequisition(id, comment || undefined);
+      else if (action === "deny") await denyRequisition(id, comment);
+      else await requestModification(id, comment);
+
+      setRequisitions(prev => prev.filter(r => r.id !== id));
+      setConfirmAction(null);
+      setComments(prev => ({ ...prev, [id]: "" }));
+    } catch (e: any) {
+      alert(e.message || "Action failed");
+    } finally {
+      setActionLoading(false);
+    }
   }
 
-  function addComment(ref: string) {
-    const text = commentInputs[ref]?.trim();
-    if (!text) return;
-    setApprovals((prev) =>
-      prev.map((a) => {
-        if (a.ref !== ref) return a;
-        return { ...a, comments: [...a.comments, { id: Date.now(), author: "You (Admin)", text, time: "Just now" }] };
-      })
-    );
-    setCommentInputs((prev) => ({ ...prev, [ref]: "" }));
+  function fmtDate(d: string) {
+    return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
   }
+
+  const submittedCount = requisitions.filter(r => r.status === "submitted").length;
+  const stage1Count = requisitions.filter(r => r.status === "stage1_approved").length;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold text-foreground">Pending Approvals</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">Requisitions awaiting your review</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">Pending Approvals</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">Review and action requisition requests</p>
+        </div>
+        <button onClick={load} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-foreground transition-colors">
+          <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-card border border-border rounded-xl p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-9 h-9 rounded-lg bg-warning/10 flex items-center justify-center">
-              <Clock className="w-4 h-4 text-warning" />
-            </div>
-            <span className="text-sm text-muted-foreground">Awaiting Review</span>
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: "Awaiting Stage 1", count: submittedCount, color: "text-warning" },
+          { label: "Awaiting Final", count: stage1Count, color: "text-chart-1" },
+          { label: "Total Pending", count: requisitions.length, color: "text-foreground" },
+        ].map(s => (
+          <div key={s.label} className="bg-card border border-border rounded-xl p-4 text-center">
+            <span className={cn("text-2xl font-bold", s.color)}>{s.count}</span>
+            <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
           </div>
-          <span className="text-2xl font-bold text-foreground">{pendingCount}</span>
-        </div>
-        <div className="bg-card border border-border rounded-xl p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-9 h-9 rounded-lg bg-success/10 flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4 text-success" />
-            </div>
-            <span className="text-sm text-muted-foreground">Approved</span>
-          </div>
-          <span className="text-2xl font-bold text-foreground">{approvedCount}</span>
-        </div>
-        <div className="bg-card border border-border rounded-xl p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-9 h-9 rounded-lg bg-destructive/10 flex items-center justify-center">
-              <AlertTriangle className="w-4 h-4 text-destructive" />
-            </div>
-            <span className="text-sm text-muted-foreground">Overdue (&gt;48h)</span>
-          </div>
-          <span className="text-2xl font-bold text-foreground">{overdueCount}</span>
-        </div>
+        ))}
       </div>
 
-      <div className="space-y-4">
-        {approvals.map((req, index) => {
-          const isExpanded = expandedRef === req.ref;
-          const isPending = req.status === "pending";
-          const sd = statusDisplay[req.status];
-          const isConfirming = confirmAction?.ref === req.ref;
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : requisitions.length === 0 ? (
+        <div className="bg-card border border-border rounded-xl p-12 text-center">
+          <CheckCircle2 className="w-8 h-8 text-success mx-auto mb-2 opacity-60" />
+          <p className="text-sm text-muted-foreground">No pending approvals. All caught up!</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {requisitions.map((req, index) => {
+            const isExpanded = expandedId === req.id;
 
-          return (
-            <div
-              key={req.ref}
-              className={cn(
-                "bg-card border rounded-xl p-5 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4",
-                isPending ? "border-border hover:border-accent/50" : "border-border opacity-80"
-              )}
-              style={{ animationDelay: `${index * 100}ms`, animationFillMode: "both" }}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-sm font-semibold text-foreground">{req.ref}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-md bg-chart-1/10 text-chart-1 font-medium">{req.stage}</span>
-                    <span className={cn("text-xs px-2 py-0.5 rounded-md font-medium", sd.bg, sd.color)}>{sd.label}</span>
-                    {req.daysOpen >= 2 && isPending && (
-                      <span className="text-xs px-2 py-0.5 rounded-md bg-destructive/10 text-destructive font-medium">Overdue</span>
-                    )}
-                  </div>
-                  <p className="text-sm text-foreground font-medium">{req.project}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {req.requester} • {req.branch} • {req.category} • {req.submitted}
-                  </p>
-                </div>
-                <span className="text-lg font-bold text-foreground">{req.amount}</span>
-              </div>
-
-              {/* Action buttons */}
-              {isPending && (
-                <div className="mt-4 pt-4 border-t border-border">
-                  {isConfirming ? (
-                    <div className="space-y-3">
-                      <p className="text-sm text-foreground font-medium">
-                        {confirmAction.action === "approve" && "Confirm approval of this requisition?"}
-                        {confirmAction.action === "deny" && "Confirm denial of this requisition?"}
-                        {confirmAction.action === "modify" && "Request modification for this requisition?"}
-                      </p>
-                      <textarea
-                        value={commentInputs[req.ref] || ""}
-                        onChange={(e) => setCommentInputs((prev) => ({ ...prev, [req.ref]: e.target.value }))}
-                        placeholder={confirmAction.action === "deny" ? "Reason for denial (required)..." : "Add a comment (optional)..."}
-                        rows={2}
-                        className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-accent resize-none"
-                      />
+            return (
+              <div
+                key={req.id}
+                className="bg-card border border-border rounded-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4"
+                style={{ animationDelay: `${index * 80}ms`, animationFillMode: "both" }}
+              >
+                <div
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-secondary/30 transition-colors"
+                  onClick={() => setExpandedId(isExpanded ? null : req.id)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-warning/10">
+                      <Clock className="w-5 h-5 text-warning" />
+                    </div>
+                    <div>
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            if (confirmAction.action === "deny" && !commentInputs[req.ref]?.trim()) return;
-                            handleAction(req.ref, confirmAction.action);
-                          }}
-                          disabled={confirmAction.action === "deny" && !commentInputs[req.ref]?.trim()}
-                          className={cn(
-                            "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                            confirmAction.action === "approve" && "bg-success text-white hover:bg-success/90",
-                            confirmAction.action === "deny" && "bg-destructive text-white hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed",
-                            confirmAction.action === "modify" && "bg-chart-1 text-white hover:bg-chart-1/90"
+                        <span className="text-sm font-semibold text-foreground">{req.reference_no}</span>
+                        <span className={cn(
+                          "text-xs px-2 py-0.5 rounded-full font-medium",
+                          req.status === "submitted" ? "bg-warning/10 text-warning" : "bg-chart-1/10 text-chart-1"
+                        )}>
+                          {req.status === "submitted" ? "Stage 1" : "Final Approval"}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">{req.project_name} · {req.requester?.name ?? "Unknown"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-semibold text-foreground">{req.currency} {Number(req.amount).toLocaleString("en", { minimumFractionDigits: 2 })}</span>
+                    {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div className="px-4 pb-4 space-y-4 border-t border-border pt-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {([
+                        ["Branch", req.branch?.replace(/_/g, " ")],
+                        ["Category", req.category?.replace(/_/g, " ")],
+                        ["Cost Centre", req.cost_center || "—"],
+                        ["Needed By", req.needed_by ? fmtDate(req.needed_by) : "—"],
+                      ] as const).map(([k, v]) => (
+                        <div key={k}>
+                          <p className="text-xs text-muted-foreground">{k}</p>
+                          <p className="text-sm font-medium text-foreground capitalize">{v}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Business Justification</p>
+                      <p className="text-sm text-foreground bg-secondary rounded-lg p-3">{req.purpose}</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">Add Comment</p>
+                      <textarea
+                        rows={2}
+                        className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-accent resize-none transition-all"
+                        placeholder="Add a comment or reason..."
+                        value={comments[req.id] || ""}
+                        onChange={e => setComments(prev => ({ ...prev, [req.id]: e.target.value }))}
+                      />
+                    </div>
+
+                    {confirmAction?.id === req.id ? (
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-warning/10 border border-warning/30">
+                        <AlertCircle className="w-4 h-4 text-warning shrink-0" />
+                        <p className="text-xs text-foreground flex-1">
+                          Confirm <strong>{confirmAction.action}</strong> for {req.reference_no}?
+                          {confirmAction.action === "deny" && !comments[req.id]?.trim() && (
+                            <span className="text-destructive ml-1">(Comment required for denial)</span>
                           )}
+                        </p>
+                        <button
+                          onClick={() => handleAction(req.id, confirmAction.action)}
+                          disabled={actionLoading || (confirmAction.action === "deny" && !comments[req.id]?.trim())}
+                          className="px-3 py-1.5 rounded-lg bg-accent text-accent-foreground text-xs font-medium hover:bg-accent/90 disabled:opacity-50"
                         >
-                          <CheckCircle2 className="w-4 h-4" />
-                          Confirm
+                          {actionLoading ? "..." : "Confirm"}
                         </button>
                         <button
                           onClick={() => setConfirmAction(null)}
-                          className="px-4 py-2 rounded-lg bg-secondary text-muted-foreground text-sm font-medium hover:text-foreground transition-colors"
+                          className="px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-muted-foreground hover:text-foreground"
                         >
                           Cancel
                         </button>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setConfirmAction({ ref: req.ref, action: "approve" })}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-success/10 text-success text-sm font-medium hover:bg-success/20 transition-colors"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => setConfirmAction({ ref: req.ref, action: "deny" })}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-colors"
-                      >
-                        <XCircle className="w-4 h-4" />
-                        Deny
-                      </button>
-                      <button
-                        onClick={() => setConfirmAction({ ref: req.ref, action: "modify" })}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-secondary text-muted-foreground text-sm font-medium hover:text-foreground hover:bg-secondary/80 transition-colors"
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                        Request Modification
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Comments section */}
-              <div className="mt-3">
-                <button
-                  onClick={() => setExpandedRef(isExpanded ? null : req.ref)}
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  {req.comments.length > 0 ? `${req.comments.length} comment${req.comments.length !== 1 ? "s" : ""}` : "Add comment"}
-                  {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                </button>
-
-                {isExpanded && (
-                  <div className="mt-3 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                    {req.comments.length > 0 && (
-                      <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {req.comments.map((c) => (
-                          <div key={c.id} className={cn("px-3 py-2 rounded-lg text-sm", c.author === "System" ? "bg-secondary/50 text-muted-foreground italic" : "bg-secondary")}>
-                            <div className="flex items-center justify-between mb-0.5">
-                              <span className="text-xs font-semibold text-foreground">{c.author}</span>
-                              <span className="text-[10px] text-muted-foreground">{c.time}</span>
-                            </div>
-                            <p className="text-sm text-foreground">{c.text}</p>
-                          </div>
-                        ))}
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setConfirmAction({ id: req.id, action: "approve" })}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-success/10 text-success text-sm font-medium hover:bg-success/20 transition-colors"
+                        >
+                          <CheckCircle2 className="w-4 h-4" /> Approve
+                        </button>
+                        <button
+                          onClick={() => setConfirmAction({ id: req.id, action: "deny" })}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-colors"
+                        >
+                          <XCircle className="w-4 h-4" /> Deny
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (!comments[req.id]?.trim()) {
+                              alert("Please add a comment describing what modifications are needed.");
+                              return;
+                            }
+                            setConfirmAction({ id: req.id, action: "modify" });
+                          }}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-muted-foreground text-sm font-medium hover:text-foreground transition-colors"
+                        >
+                          <MessageSquare className="w-4 h-4" /> Request Modification
+                        </button>
                       </div>
                     )}
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={commentInputs[req.ref] || ""}
-                        onChange={(e) => setCommentInputs((prev) => ({ ...prev, [req.ref]: e.target.value }))}
-                        onKeyDown={(e) => e.key === "Enter" && addComment(req.ref)}
-                        placeholder="Write a comment..."
-                        className="flex-1 h-9 px-3 rounded-lg bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-accent"
-                      />
-                      <button
-                        onClick={() => addComment(req.ref)}
-                        disabled={!commentInputs[req.ref]?.trim()}
-                        className="w-9 h-9 flex items-center justify-center rounded-lg bg-accent text-accent-foreground hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Send className="w-4 h-4" />
-                      </button>
-                    </div>
                   </div>
                 )}
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

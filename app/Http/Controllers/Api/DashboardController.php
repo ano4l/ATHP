@@ -88,7 +88,7 @@ class DashboardController extends Controller
             ->groupBy('status')
             ->get();
 
-        $byMonth = CashRequisition::selectRaw("strftime('%Y-%m', created_at) as month, count(*) as count, sum(amount) as total")
+        $byMonth = CashRequisition::selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, count(*) as count, sum(amount) as total")
             ->groupBy('month')
             ->orderBy('month')
             ->limit(12)

@@ -4,16 +4,16 @@ namespace App\Enums;
 
 enum RequisitionFor: string
 {
+    case INTERNAL = 'internal';
     case CLIENT = 'client';
-    case ORDER = 'order';
-    case SELF = 'self';
+    case PROJECT = 'project';
 
     public function label(): string
     {
         return match ($this) {
+            self::INTERNAL => 'Internal',
             self::CLIENT => 'Client',
-            self::ORDER => 'Order',
-            self::SELF => 'Self',
+            self::PROJECT => 'Project',
         };
     }
 }

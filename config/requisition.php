@@ -12,5 +12,6 @@ return [
     'attachment_required_categories' => [
         RequisitionCategory::PROCUREMENT->value,
         RequisitionCategory::EMERGENCY->value,
+        RequisitionCategory::MATERIALS->value,
     ],
 ];

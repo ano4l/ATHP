@@ -140,8 +140,12 @@ class CashRequisitionResource extends Resource
 
                         Forms\Components\TextInput::make('order_ref')
                             ->label('Order Reference')
-                            ->visible(fn (Forms\Get $get) => $get('requisition_for') === 'order')
-                            ->requiredIf('requisition_for', 'order'),
+                            ->visible(fn (Forms\Get $get) => $get('requisition_for') === 'client'),
+
+                        Forms\Components\Toggle::make('is_basic_requisition')
+                            ->label('Basic Requisition (multiple quotes attached)')
+                            ->helperText('Enable if multiple quotations are submitted for comparison')
+                            ->default(false),
 
                         Forms\Components\Grid::make(3)->schema([
                             Forms\Components\TextInput::make('amount')
@@ -191,6 +195,11 @@ class CashRequisitionResource extends Resource
                             ->maxSize(((int) config('requisition.attachment_max_mb', 10)) * 1024)
                             ->dehydrated(false)
                             ->helperText('Mandatory on submit for categories: ' . implode(', ', $requiredCategories))
+                            ->columnSpanFull(),
+
+                        Forms\Components\Placeholder::make('faq_guidance')
+                            ->label('Guidance')
+                            ->content('Ensure all mandatory fields are completed. Attach quotations for procurement/materials. High-value requests (≥ ' . number_format($threshold) . ') require two-stage approval. Use the comments thread to communicate with approvers.')
                             ->columnSpanFull(),
                     ]),
             ]);

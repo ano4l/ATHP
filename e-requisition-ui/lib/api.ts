@@ -179,6 +179,28 @@ export async function uploadAttachment(requisitionId: number, file: File) {
   return handleResponse(res);
 }
 
+export async function getComments(requisitionId: number) {
+  const res = await fetch(`${API_BASE}/requisitions/${requisitionId}/comments`, { headers: headers() });
+  return handleResponse(res);
+}
+
+export async function addComment(requisitionId: number, body: string, context?: string) {
+  const res = await fetch(`${API_BASE}/requisitions/${requisitionId}/comments`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ body, context }),
+  });
+  return handleResponse(res);
+}
+
+export async function submitDraft(id: number) {
+  const res = await fetch(`${API_BASE}/requisitions/${id}/submit`, {
+    method: "POST",
+    headers: headers(),
+  });
+  return handleResponse(res);
+}
+
 // ── Notifications ─────────────────────────────────────────────────────
 
 export async function getNotifications(page = 1) {
@@ -188,6 +210,14 @@ export async function getNotifications(page = 1) {
 
 export async function markNotificationRead(id: number) {
   const res = await fetch(`${API_BASE}/notifications/${id}/read`, {
+    method: "POST",
+    headers: headers(),
+  });
+  return handleResponse(res);
+}
+
+export async function markAllNotificationsRead() {
+  const res = await fetch(`${API_BASE}/notifications/read-all`, {
     method: "POST",
     headers: headers(),
   });
