@@ -5,9 +5,8 @@ import { MetricCard } from "@/components/dashboard/metric-card";
 import { RecentRequisitions } from "@/components/dashboard/recent-requisitions";
 import { StatusChart } from "@/components/dashboard/charts/status-chart";
 import { RequisitionForm } from "@/components/dashboard/modals/requisition-form";
-import { LeaveForm } from "@/components/dashboard/modals/leave-form";
 import type { Section } from "@/app/page";
-import { Clock, FileText, AlertTriangle, TrendingUp, CalendarDays, Plus } from "lucide-react";
+import { Clock, FileText, AlertTriangle, TrendingUp, Plus } from "lucide-react";
 
 interface OverviewProps {
   onNavigate: (section: Section) => void;
@@ -15,12 +14,10 @@ interface OverviewProps {
 
 export function OverviewSection({ onNavigate }: OverviewProps) {
   const [reqFormOpen, setReqFormOpen] = useState(false);
-  const [leaveFormOpen, setLeaveFormOpen] = useState(false);
 
   return (
     <div className="space-y-6">
       <RequisitionForm open={reqFormOpen} onClose={() => setReqFormOpen(false)} />
-      <LeaveForm open={leaveFormOpen} onClose={() => setLeaveFormOpen(false)} />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
           title="Total Requisitions"
@@ -37,14 +34,6 @@ export function OverviewSection({ onNavigate }: OverviewProps) {
           changeType="positive"
           icon={Clock}
           delay={1}
-        />
-        <MetricCard
-          title="Pending Leave Requests"
-          value="5"
-          change="+2"
-          changeType="neutral"
-          icon={CalendarDays}
-          delay={2}
         />
         <MetricCard
           title="Avg Turnaround"
@@ -67,7 +56,6 @@ export function OverviewSection({ onNavigate }: OverviewProps) {
               {[
                 { label: "New Requisition", icon: Plus, color: "text-chart-2", action: () => setReqFormOpen(true) },
                 { label: "Pending Approvals (4)", icon: AlertTriangle, color: "text-warning", action: () => onNavigate("approvals") },
-                { label: "Leave Requests (2)", icon: CalendarDays, color: "text-chart-1", action: () => setLeaveFormOpen(true) },
                 { label: "View Reports", icon: TrendingUp, color: "text-muted-foreground", action: () => onNavigate("reports") },
               ].map((item) => (
                 <button
@@ -84,29 +72,6 @@ export function OverviewSection({ onNavigate }: OverviewProps) {
             </div>
           </div>
 
-          <div className="bg-card border border-border rounded-xl p-5">
-            <h3 className="text-base font-semibold text-foreground mb-3">Upcoming Leave</h3>
-            <div className="space-y-3">
-              {[
-                { name: "Jane Employee", type: "Annual", dates: "24–28 Feb", status: "approved" },
-                { name: "Admin User", type: "Sick", dates: "25 Feb", status: "pending" },
-              ].map((leave) => (
-                <div key={leave.name + leave.dates} className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{leave.name}</p>
-                    <p className="text-xs text-muted-foreground">{leave.type} • {leave.dates}</p>
-                  </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
-                    leave.status === "approved"
-                      ? "bg-success/10 text-success"
-                      : "bg-warning/10 text-warning"
-                  }`}>
-                    {leave.status === "approved" ? "Approved" : "Pending"}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
 

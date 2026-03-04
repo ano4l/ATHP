@@ -1,6 +1,6 @@
-# AceTech Internal Portal
+d# AceTech Internal Portal
 
-Internal employee portal for AceTech — cash requisitions, leave management, reporting, and notifications.
+Internal employee portal for AceTech — cash requisitions, reporting, and notifications.
 
 ## Tech Stack
 
@@ -8,14 +8,14 @@ Internal employee portal for AceTech — cash requisitions, leave management, re
 - **Filament 3** — admin panel UI (TALL stack: Tailwind, Alpine.js, Laravel, Livewire)
 - **MySQL** — database
 - **Chart.js** — reporting charts
-- **Laravel Mail** — email notifications (optional)
+- **Laravel Mail** — email notifications 
 
 ## Features
 
 - **Authentication** — Filament login + registration with branch selection
 - **Role-based access** — Admin sees all records, Employee sees own records only
-- **Dashboard** — stats widgets, latest requisitions & leave tables
-- **E-Requisitions (Cash + Purchase)** — full lifecycle from draft to closure:
+- **Dashboard** — stats widgets, latest requisitions table
+- **E-Requisitions (Cash)** — full lifecycle from draft to closure:
   - Draft → Submitted
   - Stage 1 approval → Final approval (for high-value requests)
   - Modification requests and denials with comments
@@ -23,10 +23,9 @@ Internal employee portal for AceTech — cash requisitions, leave management, re
   - Fulfilment tracking, requester confirmation, and closure
 - **Workflow governance controls** — duplicate guard on submit and configurable stage-2 threshold
 - **Supporting Documents** — private file uploads with secure authenticated download endpoint
-- **Leave Management** — submit with reason, date range, auto business-day calculation; admin approve/deny
 - **Reports** (Admin only) — workflow KPIs, status breakdown, by-branch/by-type/by-category charts, trend analytics, CSV export
 - **Notifications** — in-app notifications for submissions/approvals/denials, mark read/all-read
-- **Audit Trail** — significant requisition and leave actions logged to `audit_events` and viewable in admin panel
+- **Audit Trail** — significant requisition actions logged to `audit_events` and viewable in admin panel
 
 ## Getting Started
 
@@ -95,24 +94,19 @@ app/
 │   ├── Branch.php            # south_africa, zambia, eswatini, zimbabwe
 │   ├── RequisitionFor.php    # client, order, self
 │   ├── RequisitionStatus.php # draft → stage approvals → processing → paid/fulfilled/closed
-│   ├── RequisitionType.php   # cash, purchase
 │   ├── RequisitionCategory.php
 │   ├── PaymentMethod.php
 │   ├── PurchaseStatus.php
-│   ├── DeliveryStatus.php
-│   ├── LeaveReason.php       # annual, sick, family_responsibility, study, unpaid, other
-│   └── LeaveStatus.php       # submitted, approved, denied
+│   └── DeliveryStatus.php
 ├── Models/
 │   ├── User.php
 │   ├── CashRequisition.php
 │   ├── CashRequisitionAttachment.php
-│   ├── LeaveRequest.php
 │   ├── AuditEvent.php
 │   └── Notification.php
 ├── Filament/
 │   ├── Resources/
 │   │   ├── CashRequisitionResource.php   # Full requisition workflow actions + infolists
-│   │   ├── LeaveRequestResource.php      # CRUD + approve/deny actions
 │   │   ├── NotificationResource.php      # List + mark read
 │   │   └── AuditEventResource.php        # Audit trail listing (admin only)
 │   ├── Pages/
@@ -120,8 +114,7 @@ app/
 │   │   └── Reports.php                   # Admin workflow analytics + CSV export
 │   └── Widgets/
 │       ├── StatsOverview.php             # Dashboard workflow stat cards
-│       ├── LatestRequisitions.php        # Recent requisitions table
-│       └── LatestLeaves.php              # Recent leaves t
+│       └── LatestRequisitions.php        # Recent requisitions table
 └── Providers/
     ├── AppServiceProvider.php
     └── Filament/

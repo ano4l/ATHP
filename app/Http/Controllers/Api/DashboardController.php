@@ -5,10 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AuditEvent;
 use App\Models\CashRequisition;
-use App\Models\LeaveRequest;
 use App\Models\Notification;
 use App\Enums\RequisitionStatus;
-use App\Enums\LeaveStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,7 +21,6 @@ class DashboardController extends Controller
             RequisitionStatus::SUBMITTED,
             RequisitionStatus::STAGE1_APPROVED,
         ])->count();
-        $pendingLeaves = LeaveRequest::where('status', LeaveStatus::SUBMITTED)->count();
 
         $avgTurnaround = CashRequisition::whereNotNull('approval_turnaround_hours')
             ->avg('approval_turnaround_hours');
@@ -35,7 +32,6 @@ class DashboardController extends Controller
         return response()->json([
             'total_requisitions' => $totalRequisitions,
             'pending_approvals' => $pendingApprovals,
-            'pending_leaves' => $pendingLeaves,
             'avg_turnaround_hours' => $avgTurnaround ? round($avgTurnaround) : null,
             'unread_notifications' => $unreadNotifications,
         ]);

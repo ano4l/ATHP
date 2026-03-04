@@ -179,42 +179,6 @@ export async function uploadAttachment(requisitionId: number, file: File) {
   return handleResponse(res);
 }
 
-// ── Leaves ────────────────────────────────────────────────────────────
-
-export async function getLeaves(status?: string, page = 1) {
-  const params = new URLSearchParams({ page: String(page) });
-  if (status) params.set("status", status);
-  const res = await fetch(`${API_BASE}/leaves?${params}`, { headers: headers() });
-  return handleResponse(res);
-}
-
-export async function createLeave(data: { reason: string; start_date: string; end_date: string; notes?: string }) {
-  const res = await fetch(`${API_BASE}/leaves`, {
-    method: "POST",
-    headers: headers(),
-    body: JSON.stringify(data),
-  });
-  return handleResponse(res);
-}
-
-export async function approveLeave(id: number, comment?: string) {
-  const res = await fetch(`${API_BASE}/leaves/${id}/approve`, {
-    method: "POST",
-    headers: headers(),
-    body: JSON.stringify({ comment }),
-  });
-  return handleResponse(res);
-}
-
-export async function denyLeave(id: number, comment: string) {
-  const res = await fetch(`${API_BASE}/leaves/${id}/deny`, {
-    method: "POST",
-    headers: headers(),
-    body: JSON.stringify({ comment }),
-  });
-  return handleResponse(res);
-}
-
 // ── Notifications ─────────────────────────────────────────────────────
 
 export async function getNotifications(page = 1) {

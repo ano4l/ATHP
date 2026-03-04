@@ -4,17 +4,13 @@ namespace Database\Seeders;
 
 use App\Enums\Branch;
 use App\Enums\DeliveryStatus;
-use App\Enums\LeaveReason;
-use App\Enums\LeaveStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PurchaseStatus;
 use App\Enums\RequisitionCategory;
 use App\Enums\RequisitionFor;
 use App\Enums\RequisitionStatus;
-use App\Enums\RequisitionType;
 use App\Enums\UserRole;
 use App\Models\CashRequisition;
-use App\Models\LeaveRequest;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -50,7 +46,6 @@ class DatabaseSeeder extends Seeder
             [
                 'requester_id' => $employee->id,
                 'branch' => Branch::ZAMBIA,
-                'requisition_type' => RequisitionType::CASH,
                 'project_name' => 'Copperline Client Rollout',
                 'project_code' => 'ZM-CL-001',
                 'category' => RequisitionCategory::TRAVEL,
@@ -68,7 +63,6 @@ class DatabaseSeeder extends Seeder
             [
                 'requester_id' => $employee->id,
                 'branch' => Branch::ZAMBIA,
-                'requisition_type' => RequisitionType::PURCHASE,
                 'project_name' => 'Warehouse PPE Refresh',
                 'project_code' => 'ZM-WH-042',
                 'category' => RequisitionCategory::PROCUREMENT,
@@ -85,7 +79,6 @@ class DatabaseSeeder extends Seeder
             [
                 'requester_id' => $employee->id,
                 'branch' => Branch::ZAMBIA,
-                'requisition_type' => RequisitionType::CASH,
                 'project_name' => 'Operations Internet Upgrade',
                 'project_code' => 'ZM-OPS-NET',
                 'category' => RequisitionCategory::OPERATIONS,
@@ -132,52 +125,7 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        // Sample leave requests
-        $leaves = [
-            [
-                'employee_id' => $employee->id,
-                'reason' => LeaveReason::ANNUAL,
-                'start_date' => now()->addDays(10),
-                'end_date' => now()->addDays(14),
-                'days' => 5,
-                'notes' => 'Family vacation',
-                'status' => LeaveStatus::SUBMITTED,
-            ],
-            [
-                'employee_id' => $employee->id,
-                'reason' => LeaveReason::SICK,
-                'start_date' => now()->subDays(3),
-                'end_date' => now()->subDays(2),
-                'days' => 2,
-                'notes' => 'Doctor appointment and recovery',
-                'status' => LeaveStatus::APPROVED,
-                'decided_at' => now()->subDays(2),
-                'decided_by_id' => $admin->id,
-                'decision_comment' => 'Get well soon',
-            ],
-            [
-                'employee_id' => $admin->id,
-                'reason' => LeaveReason::STUDY,
-                'start_date' => now()->addDays(20),
-                'end_date' => now()->addDays(22),
-                'days' => 3,
-                'notes' => 'Professional certification exam prep',
-                'status' => LeaveStatus::SUBMITTED,
-            ],
-        ];
-
-        foreach ($leaves as $data) {
-            LeaveRequest::firstOrCreate(
-                [
-                    'employee_id' => $data['employee_id'],
-                    'start_date' => $data['start_date'],
-                    'reason' => $data['reason'] instanceof \BackedEnum ? $data['reason']->value : $data['reason'],
-                ],
-                $data
-            );
-        }
-
-        $this->command->info('Seeded users, requisitions, and leave requests.');
+        $this->command->info('Seeded users and requisitions.');
         $this->command->info('Admin: admin@acetech.com / admin123');
         $this->command->info('Employee: employee@acetech.com / employee123');
     }

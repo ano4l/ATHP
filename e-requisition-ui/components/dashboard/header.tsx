@@ -15,7 +15,6 @@ const sectionTitles: Record<Section, string> = {
   overview: "Overview",
   requisitions: "Requisitions",
   approvals: "Approvals",
-  leaves: "Leave Management",
   reports: "Reports & Analytics",
   audit: "Audit Trail",
   settings: "Settings",

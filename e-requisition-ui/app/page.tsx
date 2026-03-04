@@ -6,13 +6,12 @@ import { Header } from "@/components/dashboard/header";
 import { OverviewSection } from "@/components/dashboard/sections/overview";
 import { RequisitionsSection } from "@/components/dashboard/sections/requisitions";
 import { ApprovalsSection } from "@/components/dashboard/sections/approvals";
-import { LeavesSection } from "@/components/dashboard/sections/leaves";
 import { ReportsSection } from "@/components/dashboard/sections/reports";
 import { AuditSection } from "@/components/dashboard/sections/audit";
 import { SettingsSection } from "@/components/dashboard/sections/settings";
 import { logout } from "@/lib/api";
 
-export type Section = "overview" | "requisitions" | "approvals" | "leaves" | "reports" | "audit" | "settings";
+export type Section = "overview" | "requisitions" | "approvals" | "reports" | "audit" | "settings";
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState<Section>("overview");
@@ -39,8 +38,6 @@ export default function Dashboard() {
         return <RequisitionsSection />;
       case "approvals":
         return <ApprovalsSection />;
-      case "leaves":
-        return <LeavesSection />;
       case "reports":
         return <ReportsSection />;
       case "audit":

@@ -9,7 +9,6 @@ use App\Enums\PurchaseStatus;
 use App\Enums\RequisitionCategory;
 use App\Enums\RequisitionFor;
 use App\Enums\RequisitionStatus;
-use App\Enums\RequisitionType;
 use App\Enums\UserRole;
 use App\Filament\Resources\CashRequisitionResource\Pages;
 use App\Models\AuditEvent;
@@ -96,11 +95,6 @@ class CashRequisitionResource extends Resource
                                 ->dehydrated(false)
                                 ->disabled()
                                 ->placeholder('Auto-generated on create'),
-
-                            Forms\Components\Select::make('requisition_type')
-                                ->options(collect(RequisitionType::cases())->mapWithKeys(fn ($t) => [$t->value => $t->label()]))
-                                ->required()
-                                ->default(RequisitionType::CASH->value),
 
                             Forms\Components\Select::make('branch')
                                 ->options(collect(Branch::cases())->mapWithKeys(fn ($b) => [$b->value => $b->label()]))
@@ -211,11 +205,6 @@ class CashRequisitionResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('requisition_type')
-                    ->label('Type')
-                    ->badge()
-                    ->formatStateUsing(fn ($state) => $state?->label() ?? '-'),
-
                 Tables\Columns\TextColumn::make('project_name')
                     ->label('Project')
                     ->searchable()
@@ -261,9 +250,6 @@ class CashRequisitionResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options(collect(RequisitionStatus::cases())->mapWithKeys(fn ($s) => [$s->value => $s->label()])),
-                Tables\Filters\SelectFilter::make('requisition_type')
-                    ->label('Requisition Type')
-                    ->options(collect(RequisitionType::cases())->mapWithKeys(fn ($t) => [$t->value => $t->label()])),
                 Tables\Filters\SelectFilter::make('category')
                     ->options(collect(RequisitionCategory::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])),
                 Tables\Filters\SelectFilter::make('branch')
@@ -774,8 +760,6 @@ class CashRequisitionResource extends Resource
                         Infolists\Components\Grid::make(4)->schema([
                             Infolists\Components\TextEntry::make('reference_no')
                                 ->label('Reference No.'),
-                            Infolists\Components\TextEntry::make('requisition_type')
-                                ->formatStateUsing(fn ($state) => $state?->label() ?? '-'),
                             Infolists\Components\TextEntry::make('project_name'),
                             Infolists\Components\TextEntry::make('project_code')
                                 ->placeholder('-'),

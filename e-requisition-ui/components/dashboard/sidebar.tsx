@@ -13,7 +13,6 @@ import {
   ClipboardList,
   Settings,
   Receipt,
-  CalendarDays,
   LogOut,
 } from "lucide-react";
 
@@ -29,7 +28,6 @@ const navItems: { id: Section; label: string; icon: React.ElementType; badge?: s
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "requisitions", label: "Requisitions", icon: FileText },
   { id: "approvals", label: "Approvals", icon: CheckSquare, badge: "4" },
-  { id: "leaves", label: "Leave Management", icon: CalendarDays, badge: "2" },
   { id: "reports", label: "Reports", icon: BarChart3 },
   { id: "audit", label: "Audit Trail", icon: ClipboardList },
   { id: "settings", label: "Settings", icon: Settings },

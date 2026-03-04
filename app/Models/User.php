@@ -54,11 +54,6 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(CashRequisition::class, 'requester_id');
     }
 
-    public function leaveRequests(): HasMany
-    {
-        return $this->hasMany(LeaveRequest::class, 'employee_id');
-    }
-
     public function appNotifications(): HasMany
     {
         return $this->hasMany(Notification::class);

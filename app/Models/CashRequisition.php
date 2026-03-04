@@ -8,7 +8,6 @@ use App\Enums\PaymentMethod;
 use App\Enums\RequisitionCategory;
 use App\Enums\RequisitionFor;
 use App\Enums\RequisitionStatus;
-use App\Enums\RequisitionType;
 use App\Enums\PurchaseStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,7 +22,6 @@ class CashRequisition extends Model
         'reference_no',
         'requester_id',
         'branch',
-        'requisition_type',
         'project_name',
         'project_code',
         'category',
@@ -69,7 +67,6 @@ class CashRequisition extends Model
     {
         return [
             'branch' => Branch::class,
-            'requisition_type' => RequisitionType::class,
             'category' => RequisitionCategory::class,
             'requisition_for' => RequisitionFor::class,
             'status' => RequisitionStatus::class,
@@ -95,7 +92,6 @@ class CashRequisition extends Model
     protected static function booted(): void
     {
         static::creating(function (self $requisition): void {
-            $requisition->requisition_type ??= RequisitionType::CASH;
             $requisition->category ??= RequisitionCategory::OPERATIONS;
         });
 

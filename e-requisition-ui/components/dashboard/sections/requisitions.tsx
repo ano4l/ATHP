@@ -6,15 +6,15 @@ import { Plus, Search, Filter, Clock, CheckCircle2, XCircle, Banknote, FileCheck
 import { RequisitionForm } from "@/components/dashboard/modals/requisition-form";
 
 const allRequisitions = [
-  { ref: "REQ-2026-0247", type: "Cash", project: "Copperline Client Rollout", category: "Travel", branch: "Zambia", amount: "ZMW 5,000.00", status: "submitted", date: "20 Feb 2026", requester: "Jane Employee" },
-  { ref: "REQ-2026-0246", type: "Purchase", project: "Warehouse PPE Refresh", category: "Procurement", branch: "Zambia", amount: "ZMW 12,500.00", status: "stage1_approved", date: "19 Feb 2026", requester: "Jane Employee" },
-  { ref: "REQ-2026-0245", type: "Cash", project: "Office Furniture Upgrade", category: "Office Supplies", branch: "South Africa", amount: "ZAR 45,000.00", status: "approved", date: "18 Feb 2026", requester: "Admin User" },
-  { ref: "REQ-2026-0244", type: "Cash", project: "IT Equipment Purchase", category: "IT & Software", branch: "Zimbabwe", amount: "USD 8,200.00", status: "processing", date: "17 Feb 2026", requester: "Jane Employee" },
-  { ref: "REQ-2026-0243", type: "Cash", project: "Operations Internet Upgrade", category: "Operations", branch: "Zambia", amount: "ZMW 3,200.00", status: "paid", date: "15 Feb 2026", requester: "Jane Employee" },
-  { ref: "REQ-2026-0242", type: "Purchase", project: "Marketing Materials", category: "Marketing", branch: "Eswatini", amount: "SZL 18,000.00", status: "fulfilled", date: "14 Feb 2026", requester: "Admin User" },
-  { ref: "REQ-2026-0241", type: "Cash", project: "Vehicle Maintenance", category: "Fleet & Transport", branch: "South Africa", amount: "ZAR 22,500.00", status: "closed", date: "12 Feb 2026", requester: "Jane Employee" },
-  { ref: "REQ-2026-0240", type: "Cash", project: "Training Programme", category: "Training", branch: "Zimbabwe", amount: "USD 3,500.00", status: "denied", date: "10 Feb 2026", requester: "Admin User" },
-  { ref: "REQ-2026-0239", type: "Cash", project: "Security System Upgrade", category: "Operations", branch: "Zambia", amount: "ZMW 28,000.00", status: "draft", date: "9 Feb 2026", requester: "Jane Employee" },
+  { ref: "REQ-2026-0247", project: "Copperline Client Rollout", category: "Travel", branch: "Zambia", amount: "ZMW 5,000.00", status: "submitted", date: "20 Feb 2026", requester: "Jane Employee" },
+  { ref: "REQ-2026-0246", project: "Warehouse PPE Refresh", category: "Procurement", branch: "Zambia", amount: "ZMW 12,500.00", status: "stage1_approved", date: "19 Feb 2026", requester: "Jane Employee" },
+  { ref: "REQ-2026-0245", project: "Office Furniture Upgrade", category: "Office Supplies", branch: "South Africa", amount: "ZAR 45,000.00", status: "approved", date: "18 Feb 2026", requester: "Admin User" },
+  { ref: "REQ-2026-0244", project: "IT Equipment Purchase", category: "IT & Software", branch: "Zimbabwe", amount: "USD 8,200.00", status: "processing", date: "17 Feb 2026", requester: "Jane Employee" },
+  { ref: "REQ-2026-0243", project: "Operations Internet Upgrade", category: "Operations", branch: "Zambia", amount: "ZMW 3,200.00", status: "paid", date: "15 Feb 2026", requester: "Jane Employee" },
+  { ref: "REQ-2026-0242", project: "Marketing Materials", category: "Marketing", branch: "Eswatini", amount: "SZL 18,000.00", status: "fulfilled", date: "14 Feb 2026", requester: "Admin User" },
+  { ref: "REQ-2026-0241", project: "Vehicle Maintenance", category: "Fleet & Transport", branch: "South Africa", amount: "ZAR 22,500.00", status: "closed", date: "12 Feb 2026", requester: "Jane Employee" },
+  { ref: "REQ-2026-0240", project: "Training Programme", category: "Training", branch: "Zimbabwe", amount: "USD 3,500.00", status: "denied", date: "10 Feb 2026", requester: "Admin User" },
+  { ref: "REQ-2026-0239", project: "Security System Upgrade", category: "Operations", branch: "Zambia", amount: "ZMW 28,000.00", status: "draft", date: "9 Feb 2026", requester: "Jane Employee" },
 ];
 
 const statusConfig: Record<string, { color: string; bg: string; label: string }> = {
@@ -39,7 +39,7 @@ export function RequisitionsSection() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-foreground">All Requisitions</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">Manage cash and purchase requisitions</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Manage requisitions</p>
         </div>
         <button
           onClick={() => setFormOpen(true)}
@@ -71,7 +71,6 @@ export function RequisitionsSection() {
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Reference</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Type</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Project</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Branch</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Amount</th>
@@ -89,7 +88,6 @@ export function RequisitionsSection() {
                     style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}
                   >
                     <td className="px-4 py-3 font-medium text-foreground">{req.ref}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{req.type}</td>
                     <td className="px-4 py-3 text-foreground">{req.project}</td>
                     <td className="px-4 py-3 text-muted-foreground">{req.branch}</td>
                     <td className="px-4 py-3 font-semibold text-foreground">{req.amount}</td>

@@ -82,13 +82,11 @@ class NotificationResource extends Resource
                 Tables\Actions\Action::make('view_related')
                     ->label('View')
                     ->icon('heroicon-o-arrow-top-right-on-square')
-                    ->visible(fn (Notification $record) => $record->related_type && $record->related_id)
+                    ->visible(fn (Notification $record) => $record->related_type === 'CashRequisition' && $record->related_id)
                     ->url(function (Notification $record) {
                         $record->update(['read' => true]);
                         if ($record->related_type === 'CashRequisition') {
                             return CashRequisitionResource::getUrl('view', ['record' => $record->related_id]);
-                        } elseif ($record->related_type === 'LeaveRequest') {
-                            return LeaveRequestResource::getUrl('view', ['record' => $record->related_id]);
                         }
                         return null;
                     }),

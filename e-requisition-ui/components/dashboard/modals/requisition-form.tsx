@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import {
   X, ChevronRight, ChevronLeft, Upload, Trash2,
-  FileText, DollarSign, Paperclip, CheckCircle2, AlertCircle
+  Paperclip, CheckCircle2, AlertCircle
 } from "lucide-react";
 
 interface RequisitionFormProps {
@@ -13,7 +13,7 @@ interface RequisitionFormProps {
   onSubmit?: (data: FormData) => void;
 }
 
-const STEPS = ["Type & Project", "Amount & Details", "Attachments", "Review"];
+const STEPS = ["Project Details", "Amount & Details", "Attachments", "Review"];
 
 const CATEGORIES = [
   { value: "operations", label: "Operations" },
@@ -33,7 +33,6 @@ const BRANCHES = [
 ];
 
 interface FormState {
-  requisition_type: "cash" | "purchase";
   project_name: string;
   project_code: string;
   category: string;
@@ -50,7 +49,6 @@ interface FormState {
 }
 
 const initial: FormState = {
-  requisition_type: "cash",
   project_name: "",
   project_code: "",
   category: "",
@@ -202,32 +200,9 @@ export function RequisitionForm({ open, onClose, onSubmit }: RequisitionFormProp
             </div>
           ) : (
             <>
-              {/* Step 0: Type & Project */}
+              {/* Step 0: Project Details */}
               {step === 0 && (
                 <div className="space-y-4">
-                  <Field label="Requisition Type" required>
-                    <div className="grid grid-cols-2 gap-3">
-                      {(["cash", "purchase"] as const).map(t => (
-                        <button
-                          key={t}
-                          onClick={() => set("requisition_type", t)}
-                          className={cn(
-                            "flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all",
-                            form.requisition_type === t
-                              ? "border-accent bg-accent/5"
-                              : "border-border hover:border-accent/50"
-                          )}
-                        >
-                          {t === "cash" ? <DollarSign className="w-5 h-5 text-accent shrink-0" /> : <FileText className="w-5 h-5 text-accent shrink-0" />}
-                          <div>
-                            <p className="text-sm font-semibold text-foreground">{t === "cash" ? "Cash Requisition" : "Purchase Requisition"}</p>
-                            <p className="text-xs text-muted-foreground">{t === "cash" ? "Direct cash disbursement" : "Goods or services"}</p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </Field>
-
                   <div className="grid grid-cols-2 gap-4">
                     <Field label="Project Name" required error={errors.project_name}>
                       <input className={cn(inputCls, errors.project_name && "border-destructive")} placeholder="e.g. Copperline Rollout" value={form.project_name} onChange={e => set("project_name", e.target.value)} />
@@ -378,7 +353,6 @@ export function RequisitionForm({ open, onClose, onSubmit }: RequisitionFormProp
                   <div className="bg-secondary rounded-xl p-4 space-y-3">
                     <h3 className="text-sm font-semibold text-foreground">Requisition Summary</h3>
                     {[
-                      ["Type", form.requisition_type === "cash" ? "Cash Requisition" : "Purchase Requisition"],
                       ["Project", form.project_name],
                       ["Category", CATEGORIES.find(c => c.value === form.category)?.label || "—"],
                       ["Branch", BRANCHES.find(b => b.value === form.branch)?.label || "—"],

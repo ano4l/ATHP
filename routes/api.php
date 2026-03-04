@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
-use App\Http\Controllers\Api\LeaveController;
 use App\Http\Controllers\Api\RequisitionController;
 use Illuminate\Support\Facades\Route;
 
@@ -29,8 +28,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/requisitions/{requisition}/close', [RequisitionController::class, 'close']);
     Route::post('/requisitions/{requisition}/attachments', [RequisitionController::class, 'uploadAttachment']);
 
-    Route::get('/leaves', [LeaveController::class, 'index']);
-    Route::post('/leaves', [LeaveController::class, 'store']);
-    Route::post('/leaves/{leave}/approve', [LeaveController::class, 'approve']);
-    Route::post('/leaves/{leave}/deny', [LeaveController::class, 'deny']);
 });

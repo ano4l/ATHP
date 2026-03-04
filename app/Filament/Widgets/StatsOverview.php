@@ -2,10 +2,8 @@
 
 namespace App\Filament\Widgets;
 
-use App\Enums\LeaveStatus;
 use App\Enums\RequisitionStatus;
 use App\Models\CashRequisition;
-use App\Models\LeaveRequest;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -53,11 +51,6 @@ class StatsOverview extends BaseWidget
                 ->color('info')
                 ->icon('heroicon-o-cog-6-tooth');
 
-            $stats[] = Stat::make('Pending Leaves', LeaveRequest::where('status', LeaveStatus::SUBMITTED->value)->count())
-                ->description('Awaiting approval')
-                ->color('warning')
-                ->icon('heroicon-o-clock');
-
             $stats[] = Stat::make('Pipeline Value', '$' . number_format((float) $portfolioValue, 2))
                 ->description('Approved through closed')
                 ->color('success')
@@ -75,18 +68,6 @@ class StatsOverview extends BaseWidget
                 ->description('Not closed/denied')
                 ->icon('heroicon-o-folder-open')
                 ->color('warning');
-
-            $stats[] = Stat::make('My Leaves', LeaveRequest::where('employee_id', $user->id)->count())
-                ->icon('heroicon-o-calendar-days')
-                ->color('info');
-
-            $approvedDays = LeaveRequest::where('employee_id', $user->id)
-                ->where('status', LeaveStatus::APPROVED->value)
-                ->sum('days');
-            $stats[] = Stat::make('Approved Leave Days', $approvedDays)
-                ->description('Total approved')
-                ->icon('heroicon-o-check-circle')
-                ->color('success');
 
             $totalAmount = CashRequisition::where('requester_id', $user->id)->sum('amount');
             $stats[] = Stat::make('Total Requested', '$' . number_format($totalAmount, 2))

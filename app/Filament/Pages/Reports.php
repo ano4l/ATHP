@@ -38,7 +38,6 @@ class Reports extends Page
         return [
             'summary' => $this->getSummary($from, $to),
             'byBranch' => $this->getByBranch($from, $to),
-            'byType' => $this->getByType($from, $to),
             'byCategory' => $this->getByCategory($from, $to),
             'byProject' => $this->getByProject($from, $to),
             'outstanding' => $this->getOutstanding(),
@@ -105,20 +104,6 @@ class Reports extends Page
             ->get()
             ->map(fn ($r) => [
                 'branch' => $this->enumLabel($r->branch),
-                'count' => (int) $r->count,
-                'total' => (float) $r->total,
-            ])
-            ->toArray();
-    }
-
-    protected function getByType(Carbon $from, Carbon $to): array
-    {
-        return CashRequisition::whereBetween('created_at', [$from, $to])
-            ->select('requisition_type', DB::raw('COUNT(*) as count'), DB::raw('COALESCE(SUM(amount), 0) as total'))
-            ->groupBy('requisition_type')
-            ->get()
-            ->map(fn ($r) => [
-                'type' => $this->enumLabel($r->requisition_type),
                 'count' => (int) $r->count,
                 'total' => (float) $r->total,
             ])
@@ -250,7 +235,6 @@ class Reports extends Page
                 'ID',
                 'Reference No',
                 'Branch',
-                'Requisition Type',
                 'Category',
                 'Requisition For',
                 'Project Name',
@@ -269,7 +253,6 @@ class Reports extends Page
                     $r->id,
                     $r->reference_no,
                     $this->enumLabel($r->branch),
-                    $this->enumLabel($r->requisition_type),
                     $this->enumLabel($r->category),
                     $this->enumLabel($r->requisition_for),
                     $r->project_name,

@@ -73,7 +73,7 @@
         </div>
 
         {{-- Charts --}}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
                 <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">By Branch</h3>
                 @if(count($byBranch) === 0)
@@ -82,15 +82,6 @@
                     <canvas id="branchChart" height="250"></canvas>
                 @endif
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">By Type</h3>
-                @if(count($byType) === 0)
-                    <p class="text-sm text-gray-400 text-center py-8">No data available</p>
-                @else
-                    <canvas id="typeChart" height="250"></canvas>
-                @endif
-            </div>
-
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
                 <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">By Category</h3>
                 @if(count($byCategory) === 0)
@@ -186,7 +177,6 @@
             destroyCharts();
 
             const byBranch = @json($byBranch);
-            const byType = @json($byType);
             const byCategory = @json($byCategory);
             const byProject = @json($byProject);
             const aging = @json($aging);
@@ -205,20 +195,6 @@
                         }]
                     },
                     options: { responsive: true, plugins: { legend: { display: false } } }
-                });
-            }
-
-            if (byType.length > 0 && document.getElementById('typeChart')) {
-                chartInstances.type = new Chart(document.getElementById('typeChart'), {
-                    type: 'doughnut',
-                    data: {
-                        labels: byType.map(d => d.type),
-                        datasets: [{
-                            data: byType.map(d => d.count),
-                            backgroundColor: COLORS.slice(0, byType.length)
-                        }]
-                    },
-                    options: { responsive: true }
                 });
             }
 

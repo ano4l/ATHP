@@ -2,16 +2,6 @@
 
 namespace App\Enums;
 
-enum RequisitionType: string
-{
-    case CASH = 'cash';
-    case PURCHASE = 'purchase';
-
-    public function label(): string
-    {
-        return match ($this) {
-            self::CASH => 'Cash Requisition',
-            self::PURCHASE => 'Purchase Requisition',
-        };
-    }
-}
+// This enum has been deprecated and is no longer used.
+// The cash/purchase requisition type distinction has been removed.
+// This file can be safely deleted after confirming no remaining references.

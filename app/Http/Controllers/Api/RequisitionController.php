@@ -53,7 +53,6 @@ class RequisitionController extends Controller
     public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'requisition_type' => 'required|in:cash,purchase',
             'project_name' => 'required|string|max:255',
             'category' => 'required|string',
             'amount' => 'required|numeric|min:0.01',
@@ -74,7 +73,6 @@ class RequisitionController extends Controller
         $requisition = CashRequisition::create([
             'requester_id' => $user->id,
             'branch' => $user->branch,
-            'requisition_type' => $request->requisition_type,
             'project_name' => $request->project_name,
             'category' => $request->category,
             'amount' => $request->amount,
